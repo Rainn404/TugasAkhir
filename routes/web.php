@@ -79,6 +79,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/surveys', [AdminController::class, 'surveys'])->name('surveys');
         Route::post('/surveys/{survey}/status', [SurveyController::class, 'updateStatus'])->name('surveys.update-status');
+        Route::post('/surveys/{survey}/assign-worker', [SurveyController::class, 'assignWorker'])->name('surveys.assign-worker');
 
         // Inventaris & Variasi
         Route::get('/inventories', [AdminController::class, 'inventories'])->name('inventories');

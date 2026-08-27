@@ -22,6 +22,8 @@ class Survey extends Model
         'status',
         'survey_date',
         'admin_notes',
+        'assigned_worker_id',
+        'worker_instructions',
     ];
 
     protected $casts = [
@@ -29,8 +31,20 @@ class Survey extends Model
         'survey_date' => 'date',
     ];
 
+    /**
+     * Pelanggan yang mengajukan survei.
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
+
+    /**
+     * Pekerja / petugas lapangan yang ditugaskan melakukan survei.
+     */
+    public function assignedWorker(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_worker_id');
+    }
 }
+

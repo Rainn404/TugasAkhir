@@ -109,7 +109,7 @@ class AdminController extends Controller
      */
     public function surveys(Request $request)
     {
-        $query = Survey::with('user');
+        $query = Survey::with(['user', 'assignedWorker']);
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -117,7 +117,10 @@ class AdminController extends Controller
 
         $surveys = $query->orderBy('created_at', 'desc')->paginate(15);
 
-        return view('admin.surveys.index', compact('surveys'));
+        // Daftar pekerja yang bisa ditugaskan (role admin atau pekerja)
+        $workers = User::whereIn('role', ['admin', 'pekerja'])->orderBy('name')->get();
+
+        return view('admin.surveys.index', compact('surveys', 'workers'));
     }
 
     /**
