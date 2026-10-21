@@ -37,6 +37,8 @@ Route::post('/payment/webhook', [PaymentController::class, 'handleNotification']
 // Authenticated Routes
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+    Route::post('/dashboard/order/{order_number}/payment-token', [PaymentController::class, 'retrySnapToken'])
+        ->name('payments.retry');
 
     // Shopping Cart & Pemesanan
     Route::get('/cart', [CartController::class, 'index'])->name('cart.index');

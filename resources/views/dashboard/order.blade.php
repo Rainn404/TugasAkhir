@@ -143,6 +143,14 @@
                     <button class="btn btn-dark w-100 py-2.5 rounded-3 fw-bold mt-2" onclick="payWithSnap()">
                         <i class="bi bi-credit-card me-1"></i> Bayar Sekarang
                     </button>
+                @elseif($order->status === 'pending_payment')
+                    <form action="{{ route('payments.retry', $order->order_number) }}" method="POST" class="mt-3">
+                        @csrf
+                        <button type="submit" class="btn btn-dark w-100 py-2.5 rounded-3 fw-bold">
+                            <i class="bi bi-arrow-repeat me-1"></i> Siapkan Pembayaran
+                        </button>
+                    </form>
+                    <small class="text-secondary d-block mt-2">Token pembayaran belum tersedia. Klik untuk mencoba menghubungkan pesanan ke Midtrans.</small>
                 @endif
             </div>
         </div>
@@ -150,8 +158,7 @@
 </div>
 
 @push('scripts')
-<!-- Midtrans Snap JS (Sandbox) -->
-<script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('services.midtrans.client_key') }}"></script>
+<script src="{{ config('services.midtrans.is_production') ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js' }}" data-client-key="{{ config('services.midtrans.client_key') }}"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {

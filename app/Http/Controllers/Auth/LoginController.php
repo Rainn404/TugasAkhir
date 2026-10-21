@@ -45,7 +45,7 @@ class LoginController extends Controller
 
         return back()->withErrors([
             'email' => 'Email atau password yang Anda masukkan salah.',
-        ])->onlyInput('email');
+        ])->withInput($request->only('email'));
     }
 
     public function logout(Request $request)

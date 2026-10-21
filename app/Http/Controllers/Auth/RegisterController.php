@@ -31,17 +31,15 @@ class RegisterController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $user = User::create([
+        User::create([
             'name' => $request->name,
             'email' => $request->email,
             'phone' => $request->phone,
             'address' => $request->address,
             'password' => Hash::make($request->password),
-            'role' => 'customer', // Always register as customer
+            'role' => 'customer',
         ]);
 
-        Auth::login($user);
-
-        return redirect()->route('home')->with('success', 'Pendaftaran berhasil! Selamat datang di Arsy Tenda.');
+        return redirect()->route('login')->with('success', 'Pendaftaran berhasil! Silakan masuk dengan akun Anda.');
     }
 }

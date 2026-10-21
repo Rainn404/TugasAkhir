@@ -7,9 +7,11 @@ use App\Models\Event;
 use App\Models\Inventory;
 use App\Models\Order;
 use App\Models\OrderDetail;
+use App\Models\Payment;
 use App\Models\User;
 use App\Services\InventoryAvailabilityService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class ArsyTendaSystemTest extends TestCase
@@ -130,10 +132,12 @@ class ArsyTendaSystemTest extends TestCase
 
     public function test_customer_can_submit_survey_request(): void
     {
+        $futureDate = date('Y-m-d', strtotime('+7 days'));
+
         $response = $this->actingAs($this->customer)->post('/survey/request', [
             'event_name' => 'Rencana Wisuda Akbar',
             'phone' => '08123456789',
-            'event_date' => '2026-10-01',
+            'event_date' => $futureDate,
             'estimated_time' => '08:00 - 15:00',
             'address' => 'Gedung Serbaguna Pelaihari',
             'latitude' => -3.795,
@@ -146,6 +150,92 @@ class ArsyTendaSystemTest extends TestCase
             'event_name' => 'Rencana Wisuda Akbar',
             'status' => 'menunggu',
         ]);
+    }
+
+    public function test_customer_can_retry_payment_when_snap_token_is_missing(): void
+    {
+        $event = Event::create([
+            'user_id' => $this->customer->id,
+            'event_name' => 'Acara Uji Pembayaran',
+            'event_type' => 'Pernikahan',
+            'event_date' => date('Y-m-d', strtotime('+30 days')),
+            'start_time' => '08:00',
+            'end_time' => '18:00',
+            'address' => 'Pelaihari',
+            'latitude' => -3.795,
+            'longitude' => 114.77,
+            'status' => 'scheduled',
+        ]);
+
+        $order = Order::create([
+            'order_number' => 'ORD-RETRY-001',
+            'user_id' => $this->customer->id,
+            'event_id' => $event->id,
+            'total_amount' => 1500000,
+            'status' => 'pending_payment',
+            'payment_status' => 'pending',
+        ]);
+
+        Payment::create([
+            'order_id' => $order->id,
+            'gross_amount' => 1500000,
+            'payment_status' => 'pending',
+        ]);
+
+        Http::fake([
+            'app.sandbox.midtrans.com/snap/v1/transactions' => Http::response([
+                'token' => 'snap-test-token',
+            ], 201),
+        ]);
+
+        $this->actingAs($this->customer)
+            ->get(route('dashboard.order', $order->order_number))
+            ->assertOk()
+            ->assertSee('Siapkan Pembayaran');
+
+        $this->actingAs($this->customer)
+            ->post(route('payments.retry', $order->order_number))
+            ->assertRedirect(route('dashboard.order', $order->order_number));
+
+        $this->assertDatabaseHas('payments', [
+            'order_id' => $order->id,
+            'snap_token' => 'snap-test-token',
+        ]);
+
+        $this->actingAs($this->customer)
+            ->get(route('dashboard.order', $order->order_number))
+            ->assertOk()
+            ->assertSee('Bayar Sekarang')
+            ->assertSee('snap-test-token');
+    }
+
+    public function test_customer_can_register_then_login_with_new_account(): void
+    {
+        $email = 'newcustomer@example.com';
+
+        $registerResponse = $this->post('/register', [
+            'name' => 'Pelanggan Baru',
+            'email' => $email,
+            'phone' => '081299988877',
+            'address' => 'Banjarmasin',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $registerResponse->assertRedirect('/login');
+        $registerResponse->assertSessionHas('success', 'Pendaftaran berhasil! Silakan masuk dengan akun Anda.');
+        $this->assertDatabaseHas('users', [
+            'email' => $email,
+            'role' => 'customer',
+        ]);
+
+        $loginResponse = $this->post('/login', [
+            'email' => $email,
+            'password' => 'password123',
+        ]);
+
+        $loginResponse->assertRedirect('/');
+        $this->assertAuthenticatedAs(User::where('email', $email)->first());
     }
 
     public function test_admin_can_access_dashboard_and_orders(): void

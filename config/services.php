@@ -28,6 +28,12 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'midtrans' => [
+        'server_key' => env('PAYMENT_GATEWAY_SERVER_KEY'),
+        'client_key' => env('PAYMENT_GATEWAY_CLIENT_KEY'),
+        'is_production' => env('PAYMENT_GATEWAY_IS_PRODUCTION', false),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

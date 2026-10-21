@@ -15,9 +15,9 @@ class MidtransService
 
     public function __construct()
     {
-        $this->serverKey = env('PAYMENT_GATEWAY_SERVER_KEY', 'SB-Mid-server-arsytenda-demo-key');
-        $this->clientKey = env('PAYMENT_GATEWAY_CLIENT_KEY', 'SB-Mid-client-arsytenda-demo-key');
-        $this->isProduction = filter_var(env('PAYMENT_GATEWAY_IS_PRODUCTION', false), FILTER_VALIDATE_BOOLEAN);
+        $this->serverKey = (string) config('services.midtrans.server_key', '');
+        $this->clientKey = (string) config('services.midtrans.client_key', '');
+        $this->isProduction = filter_var(config('services.midtrans.is_production', false), FILTER_VALIDATE_BOOLEAN);
         
         $this->baseUrl = $this->isProduction 
             ? 'https://app.midtrans.com' 
@@ -29,6 +29,11 @@ class MidtransService
      */
     public function createSnapToken(Order $order): ?array
     {
+        if ($this->serverKey === '') {
+            Log::error('Midtrans server key is not configured.');
+            return null;
+        }
+
         $url = $this->baseUrl . '/snap/v1/transactions';
         $user = $order->user;
 
