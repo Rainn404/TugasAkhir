@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Sistem Informasi Pemesanan dan Manajemen Inventaris Perlengkapan Acara Arsy Tenda
 
 Sistem Informasi berbasis web untuk mengelola pemesanan, konfigurasi perlengkapan, inventaris, jadwal, lokasi acara, survei lapangan, dan pembayaran online terintegrasi (Midtrans & Google Maps).
@@ -83,3 +84,6 @@ php artisan test
 
 ## 📄 Lisensi
 Hak Cipta &copy; 2026 **Arsy Tenda**.
+=======
+# TugasAkhir
+>>>>>>> 785caecce5972da4875f3e4235432e31b50e18b2
