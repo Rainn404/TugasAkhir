@@ -37,8 +37,8 @@
                 <div class="hero-visual-wrapper">
                     <div class="hero-image-frame">
                         <img
-                            src="{{ asset('assets/images/hero-tent.jpg') }}"
-                            alt="Tenda Pesta Arsy Tenda Pelaihari"
+                            src="{{ \App\Models\SystemSetting::getImageUrl('homepage_hero_image', 'assets/images/hero-tent.jpg') }}"
+                            alt="{{ \App\Models\SystemSetting::get('homepage_hero_alt', 'Tenda Pesta Arsy Tenda Pelaihari') }}"
                             class="hero-tent-photo"
                             width="640"
                             height="480"
@@ -255,29 +255,29 @@
             <div class="portfolio-collage-side" data-reveal>
                 <div class="collage-container">
                     <div class="collage-item collage-item--main">
-                        <img src="{{ asset('assets/images/references/marquee.jpg') }}"
-                             alt="Pemasangan Tenda Resepsi Elegan Arsy Tenda"
+                        <img src="{{ \App\Models\SystemSetting::getImageUrl('portfolio_image_1', 'assets/images/references/marquee.jpg') }}"
+                             alt="{{ \App\Models\SystemSetting::get('portfolio_alt_1', 'Pemasangan Tenda Resepsi Elegan Arsy Tenda') }}"
                              width="600"
                              height="450"
                              loading="lazy">
                     </div>
                     <div class="collage-item collage-item--stage">
-                        <img src="{{ asset('assets/images/references/event-stage.jpg') }}"
-                             alt="Instalasi Panggung Rigging Acara"
+                        <img src="{{ \App\Models\SystemSetting::getImageUrl('portfolio_image_2', 'assets/images/references/event-stage.jpg') }}"
+                             alt="{{ \App\Models\SystemSetting::get('portfolio_alt_2', 'Instalasi Panggung Rigging Acara') }}"
                              width="400"
                              height="300"
                              loading="lazy">
                     </div>
                     <div class="collage-item collage-item--dining">
-                        <img src="{{ asset('assets/images/references/table-setup.jpg') }}"
-                             alt="Penataan Meja Kursi Jamuan Tamu"
+                        <img src="{{ \App\Models\SystemSetting::getImageUrl('portfolio_image_3', 'assets/images/references/table-setup.jpg') }}"
+                             alt="{{ \App\Models\SystemSetting::get('portfolio_alt_3', 'Penataan Meja Kursi Jamuan Tamu') }}"
                              width="400"
                              height="300"
                              loading="lazy">
                     </div>
                     <div class="collage-item collage-item--wide">
-                        <img src="{{ asset('assets/images/hero-tent.jpg') }}"
-                             alt="Suasana Tenda Roder Acara Besar"
+                        <img src="{{ \App\Models\SystemSetting::getImageUrl('portfolio_image_4', 'assets/images/hero-tent.jpg') }}"
+                             alt="{{ \App\Models\SystemSetting::get('portfolio_alt_4', 'Suasana Tenda Roder Acara Besar') }}"
                              width="800"
                              height="400"
                              loading="lazy">

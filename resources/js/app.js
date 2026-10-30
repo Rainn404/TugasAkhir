@@ -23,6 +23,7 @@ publicNavMenu?.querySelectorAll('a').forEach((link) => {
     });
 });
 
+
 function setSidebarOpen(open) {
     if (!sidebar || !sidebarOverlay) return;
 

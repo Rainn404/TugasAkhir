@@ -14,9 +14,10 @@ class InventoryAvailabilityService
      * @param int|Inventory $inventory
      * @param string|null $date
      * @param int|null $variantId
+     * @param int|null $excludeOrderId
      * @return array
      */
-    public function checkAvailability($inventory, ?string $date = null, ?int $variantId = null): array
+    public function checkAvailability($inventory, ?string $date = null, ?int $variantId = null, ?int $excludeOrderId = null): array
     {
         if (!$inventory instanceof Inventory) {
             $inventory = Inventory::with('variants')->findOrFail($inventory);
@@ -70,6 +71,9 @@ class InventoryAvailabilityService
         $usedStock = (int) OrderDetail::where('inventory_id', $inventory->id)
             ->when($variantId, function ($query, $vId) {
                 return $query->where('inventory_variant_id', $vId);
+            })
+            ->when($excludeOrderId, function ($query, $exId) {
+                return $query->where('order_id', '!=', $exId);
             })
             ->whereHas('order', function ($orderQuery) use ($date) {
                 $orderQuery->where(function ($statusQuery) {
@@ -144,6 +148,43 @@ class InventoryAvailabilityService
                 return [
                     false,
                     "Stok {$item['name']} tidak mencukupi pada tanggal {$formattedDate}. Stok tersedia: {$availability['available_stock']} {$unitName} (Dibutuhkan: {$item['quantity']} {$unitName})."
+                ];
+            }
+        }
+
+        return [true, null];
+    }
+
+    /**
+     * Validate whether an existing order can still be fulfilled on its event date
+     * (used during retry payment attempts to prevent overbooking).
+     *
+     * @param \App\Models\Order $order
+     * @return array [bool $isValid, string|null $errorMessage]
+     */
+    public function validateOrderAvailability(\App\Models\Order $order): array
+    {
+        $order->loadMissing(['orderDetails.inventory.variants', 'event']);
+        $eventDate = $order->event?->event_date;
+        if (!$eventDate) {
+            return [false, 'Tanggal acara pesanan tidak ditemukan.'];
+        }
+
+        foreach ($order->orderDetails as $detail) {
+            $inventory = $detail->inventory;
+            if (!$inventory) {
+                return [false, 'Perlengkapan dalam pesanan tidak ditemukan di sistem.'];
+            }
+
+            // Hitung ketersediaan dengan mengecualikan pesanan ini sendiri
+            $availability = $this->checkAvailability($inventory, (string) $eventDate, $detail->inventory_variant_id, $order->id);
+
+            if ($availability['available_stock'] < $detail->quantity) {
+                $unitName = $inventory->unit ?? 'unit';
+                $formattedDate = Carbon::parse($eventDate)->translatedFormat('d F Y');
+                return [
+                    false,
+                    "Stok {$inventory->name} tidak mencukupi untuk tanggal {$formattedDate}. Stok tersisa: {$availability['available_stock']} {$unitName} (Dibutuhkan: {$detail->quantity} {$unitName})."
                 ];
             }
         }

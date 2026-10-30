@@ -17,20 +17,29 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Guard keamanan lingkungan produksi:
+        // Akun demo dan kata sandi umum tidak boleh dibuat di lingkungan produksi.
+        if (app()->isProduction()) {
+            if (isset($this->command)) {
+                $this->command->warn('Lingkungan produksi terdeteksi: pembuatan akun demo bawaan dilewati demi keamanan.');
+            }
+            return;
+        }
+
         // 1. Create Users
         User::create([
             'name' => 'Admin Arsy Tenda',
             'email' => 'admin@example.com',
             'role' => 'admin',
             'phone' => '08123456789',
-            'address' => 'Jl. Admin No. 1, Jakarta',
+            'address' => 'Jl. Admin No. 1, Pelaihari',
             'password' => bcrypt('password'),
         ]);
 
         User::create([
             'name' => 'Petugas Lapangan Arsy Tenda',
             'email' => 'pekerja@example.com',
-            'role' => 'admin',
+            'role' => 'pekerja',
             'phone' => '081298765432',
             'address' => 'Gudang Arsy Tenda, Pelaihari',
             'password' => bcrypt('password'),
@@ -41,7 +50,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'customer@example.com',
             'role' => 'customer',
             'phone' => '08987654321',
-            'address' => 'Jl. Customer No. 22, Bogor',
+            'address' => 'Jl. Customer No. 22, Pelaihari',
             'password' => bcrypt('password'),
         ]);
 

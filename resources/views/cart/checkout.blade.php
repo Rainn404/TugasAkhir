@@ -218,16 +218,16 @@
                 <!-- Price Summary -->
                 <div class="d-flex justify-content-between text-secondary small mb-2">
                     <span>Subtotal Perlengkapan</span>
-                    <span class="text-black fw-semibold">Rp {{ number_format($total, 0, ',', '.') }}</span>
+                    <span class="text-black fw-semibold tabular-nums" id="checkoutSubtotal" data-subtotal="{{ (float) $total }}">Rp {{ number_format($total, 0, ',', '.') }}</span>
                 </div>
                 <div class="d-flex justify-content-between text-secondary small mb-3">
                     <span>Biaya Pengiriman &amp; Pemasangan</span>
-                    <span class="text-success fw-semibold">Termasuk (Gratis)</span>
+                    <span id="checkoutShippingFeeText" class="text-success fw-semibold tabular-nums">Termasuk (Gratis)</span>
                 </div>
 
                 <div class="d-flex justify-content-between fw-bold text-black border-top pt-3 fs-5 mb-4" style="border-color: #E7E2DA !important;">
                     <span>Total Pembayaran</span>
-                    <span>Rp {{ number_format($total, 0, ',', '.') }}</span>
+                    <span id="checkoutGrandTotal" class="tabular-nums">Rp {{ number_format($total, 0, ',', '.') }}</span>
                 </div>
 
                 <div class="p-3 rounded-3 small text-secondary mb-4" style="background: #FAF8F5; border: 1px solid #DDD8D0;">

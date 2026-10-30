@@ -27,7 +27,7 @@ class RegisterController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'phone' => ['required', 'string', 'max:20'],
-            'address' => ['required', 'string'],
+            'address' => ['nullable', 'string', 'max:500'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -35,7 +35,7 @@ class RegisterController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'phone' => $request->phone,
-            'address' => $request->address,
+            'address' => $request->address ?? null,
             'password' => Hash::make($request->password),
             'role' => 'customer',
         ]);

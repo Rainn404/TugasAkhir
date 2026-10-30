@@ -1031,6 +1031,13 @@ textarea:focus-visible {
     visibility: visible;
 }
 
+/* Global reset for Bootstrap Collapse vs Tailwind 4 conflict:
+   Tailwind outputs `.collapse { visibility: collapse; }` which hides Bootstrap collapses when opened. */
+.collapse.show,
+.collapsing {
+    visibility: visible !important;
+}
+
 @media (min-width: 992px) {
     .site-navbar .navbar-toggler {
         display: none;
@@ -2068,6 +2075,13 @@ body.site-shell {
 }
 
 .navbar-pill-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.navbar-pill-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -3413,17 +3427,14 @@ body.site-shell {
     }
 }
 
+/* ============================================================
+   FLOATING NAVBAR: DESKTOP & MOBILE CIRCULAR DISC
+   ============================================================ */
 @media (min-width: 992px) {
-    .site-navbar-pill .navbar-collapse {
-        display: flex !important;
-        flex-basis: auto;
+    .navbar-pill-header {
+        display: contents;
     }
-    .site-navbar-pill .navbar-toggler {
-        display: none !important;
-    }
-}
 
-@media (min-width: 992px) {
     .site-header-floating .collapse:not(.show),
     .site-header-floating .navbar-collapse,
     .site-navbar-pill .navbar-collapse {
@@ -3431,15 +3442,245 @@ body.site-shell {
         flex-grow: 1;
         align-items: center;
         justify-content: space-between;
+        visibility: visible !important;
     }
+
     .site-navbar-pill .navbar-toggler {
         display: none !important;
     }
 }
 
-.site-navbar-pill .navbar-collapse,
-.site-header-floating .navbar-collapse {
-    visibility: visible !important;
+@media (max-width: 991.98px) {
+    .site-header-floating {
+        padding: 0 0.75rem;
+    }
+
+    .site-navbar-pill {
+        max-width: 520px;
+        width: 100%;
+        margin: 0 auto;
+        border-radius: 9999px;
+        padding: 0.45rem 0.85rem 0.45rem 1.15rem;
+        background: rgba(255, 255, 255, 0.94) !important;
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        box-shadow: 0 10px 30px rgba(25, 25, 25, 0.06);
+        transition: width 0.3s ease, border-radius 0.3s ease, padding 0.3s ease, box-shadow 0.25s ease;
+    }
+
+    .navbar-pill-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+    }
+
+    .navbar-pill-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .site-navbar-pill .navbar-toggler {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        padding: 0 !important;
+        border-radius: 50% !important;
+        background: transparent;
+        color: #191919;
+        border: none;
+        transition: background-color 0.2s ease;
+    }
+
+    .site-navbar-pill .navbar-toggler:focus {
+        box-shadow: none;
+        outline: none;
+    }
+
+    .site-navbar-pill .navbar-toggler-icon {
+        width: 18px;
+        height: 18px;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%23191919' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2.2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
+    }
+
+    /* When OPENED: transform toggler into Close "✕" icon */
+    .site-navbar-pill .navbar-toggler:not(.collapsed),
+    .site-navbar-pill:has(#navbarFloatingMenu.show) .navbar-toggler {
+        background-color: rgba(25, 25, 25, 0.06);
+    }
+
+    .site-navbar-pill .navbar-toggler:not(.collapsed) .navbar-toggler-icon,
+    .site-navbar-pill:has(#navbarFloatingMenu.show) .navbar-toggler .navbar-toggler-icon {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23191919'%3e%3cpath d='M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708-.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z'/%3e%3c/svg%3e") !important;
+    }
+
+    /* When OPENED: The Navbar Pill expands into the circular disc */
+    .site-navbar-pill:has(#navbarFloatingMenu.show) {
+        width: min(350px, calc(100vw - 28px)) !important;
+        min-height: min(350px, calc(100vw - 28px)) !important;
+        border-radius: 50% !important;
+        padding: 1.35rem 1.25rem 1.35rem !important;
+        box-shadow: 0 20px 48px rgba(25, 25, 25, 0.14) !important;
+        background: rgba(255, 255, 255, 0.98) !important;
+        border: 1px solid rgba(25, 25, 25, 0.08) !important;
+    }
+
+    .site-navbar-pill:has(#navbarFloatingMenu.show) .navbar-pill-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        min-height: calc(min(350px, calc(100vw - 28px)) - 2.7rem);
+        width: 100%;
+    }
+
+    .site-navbar-pill:has(#navbarFloatingMenu.show) .navbar-pill-header {
+        width: 76%;
+        padding-top: 0.15rem;
+    }
+
+    .site-navbar-pill:has(#navbarFloatingMenu.show) .brand-arsy .brand-mark {
+        padding: 0.28rem 0.65rem;
+        font-size: 0.74rem;
+    }
+
+    .site-navbar-pill:has(#navbarFloatingMenu.show) .brand-arsy .brand-name {
+        font-size: 0.85rem;
+    }
+
+    /* CRITICAL FIX FOR TAILWIND CSS V4 CONFLICT:
+       Tailwind v4 defines `.collapse { visibility: collapse; }`.
+       Bootstrap collapse uses `.collapse.show`.
+       Explicit `visibility: visible !important` ensures the menu links stay permanently visible! */
+    .site-navbar-pill #navbarFloatingMenu.show,
+    .site-navbar-pill #navbarFloatingMenu.collapsing,
+    .site-navbar-pill:has(#navbarFloatingMenu.show) #navbarFloatingMenu,
+    .site-navbar-pill:has(#navbarFloatingMenu.show) #navbarFloatingMenu * {
+        visibility: visible !important;
+    }
+
+    /* Navigation Links inside circle */
+    .site-navbar-pill #navbarFloatingMenu.show {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-grow: 1 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0.35rem 0 0.15rem !important;
+        visibility: visible !important;
+    }
+
+    .site-navbar-pill:has(#navbarFloatingMenu.show) .site-nav-links {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 0.18rem !important;
+        list-style: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+
+    .site-navbar-pill:has(#navbarFloatingMenu.show) .site-nav-links .nav-item {
+        text-align: center;
+        width: 100%;
+    }
+
+    .site-navbar-pill:has(#navbarFloatingMenu.show) .site-nav-links .nav-link {
+        display: inline-block;
+        font-size: 0.865rem;
+        font-weight: 500;
+        color: #4A4640 !important;
+        padding: 0.12rem 0.5rem !important;
+        line-height: 1.3;
+        transition: color 0.15s ease;
+    }
+
+    .site-navbar-pill:has(#navbarFloatingMenu.show) .site-nav-links .nav-link:hover {
+        color: #191919 !important;
+    }
+
+    .site-navbar-pill:has(#navbarFloatingMenu.show) .site-nav-links .nav-link.active {
+        font-weight: 700;
+        color: #191919 !important;
+    }
+
+    .site-navbar-pill:has(#navbarFloatingMenu.show) .site-nav-links .nav-link.active::after {
+        bottom: -1px;
+        height: 2px;
+        background-color: #C5A880;
+        border-radius: 1px;
+    }
+
+    /* Actions inside circle */
+    .site-navbar-pill:has(#navbarFloatingMenu.show) .nav-actions {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        width: 80%;
+        margin-top: auto;
+        padding-bottom: 0.2rem;
+    }
+
+    .site-navbar-pill:has(#navbarFloatingMenu.show) .btn-nav-action-pill {
+        padding: 0.38rem 0.9rem !important;
+        font-size: 0.78rem !important;
+    }
+
+    .site-navbar-pill:has(#navbarFloatingMenu.show) .btn-nav-icon-only {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 0.8rem !important;
+    }
+
+    .site-navbar-pill:has(#navbarFloatingMenu.show) .btn-nav-cart {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 0.8rem !important;
+    }
+
+    .site-navbar-pill:has(#navbarFloatingMenu.show) .btn-nav-login {
+        font-size: 0.78rem !important;
+        padding: 0.35rem 0.75rem !important;
+    }
+
+    .site-navbar-pill:has(#navbarFloatingMenu.show) .btn-nav-contact {
+        font-size: 0.78rem !important;
+        padding: 0.38rem 0.9rem !important;
+    }
+}
+
+@media (max-width: 375px) {
+    .site-navbar-pill:has(#navbarFloatingMenu.show) {
+        width: calc(100vw - 20px) !important;
+        min-height: calc(100vw - 20px) !important;
+        padding: 1.15rem 1rem !important;
+    }
+
+    .site-navbar-pill:has(#navbarFloatingMenu.show) .navbar-pill-header {
+        width: 74%;
+    }
+
+    .site-navbar-pill:has(#navbarFloatingMenu.show) .site-nav-links .nav-link {
+        font-size: 0.82rem;
+        padding: 0.1rem 0.4rem !important;
+    }
+
+    .site-navbar-pill:has(#navbarFloatingMenu.show) .nav-actions {
+        width: 78%;
+    }
 }
 
 .section-hero .container {

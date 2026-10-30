@@ -1840,6 +1840,27 @@ class ArsyTendaSystemTest extends TestCase
         $this->assertAuthenticatedAs(User::where('email', $email)->first());
     }
 
+    public function test_customer_can_register_without_filling_address_successfully(): void
+    {
+        $email = 'noaddress@example.com';
+
+        $registerResponse = $this->post('/register', [
+            'name' => 'Pelanggan Tanpa Alamat',
+            'email' => $email,
+            'phone' => '081277766655',
+            'address' => '', // Dikosongkan sesuai keterangan label Opsional di form
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $registerResponse->assertRedirect('/login');
+        $registerResponse->assertSessionHas('success', 'Pendaftaran berhasil! Silakan masuk dengan akun Anda.');
+        $this->assertDatabaseHas('users', [
+            'email' => $email,
+            'role' => 'customer',
+        ]);
+    }
+
     public function test_admin_can_access_dashboard_and_orders(): void
     {
         $response = $this->actingAs($this->admin)->get('/admin');

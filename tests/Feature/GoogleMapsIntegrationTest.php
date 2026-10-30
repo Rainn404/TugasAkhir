@@ -344,4 +344,58 @@ class GoogleMapsIntegrationTest extends TestCase
             ->assertDontSee('leaflet.css', false)
             ->assertDontSee('openstreetmap.org', false);
     }
+
+    public function test_checkout_delivery_fee_calculated_by_server_and_client_tampering_ignored(): void
+    {
+        $category = \App\Models\Category::firstOrCreate(['slug' => 'tenda-test'], ['name' => 'Tenda']);
+        $inventory = \App\Models\Inventory::create([
+            'category_id' => $category->id,
+            'name' => 'Tenda Roder Elegan',
+            'slug' => 'tenda-roder-test-' . uniqid(),
+            'unit' => 'unit',
+            'price' => 300000,
+            'stock' => 5,
+            'status' => 'available',
+        ]);
+
+        $eventDate = date('Y-m-d', strtotime('+7 days'));
+        $cartKey = "{$inventory->id}_";
+        $session = [
+            'cart' => [
+                $cartKey => [
+                    'inventory_id' => $inventory->id,
+                    'variant_id' => null,
+                    'name' => $inventory->name,
+                    'variant_name' => null,
+                    'unit_price' => 300000,
+                    'quantity' => 1,
+                    'subtotal' => 300000,
+                ],
+            ],
+            'cart_date' => $eventDate,
+        ];
+
+        // Lokasi berjarak ~35 km dari Pelaihari (melebihi radius gratis 15 km)
+        // Dest: -3.5000, 114.7712 (kurang lebih 33-35 km)
+        $checkoutData = [
+            'event_name' => 'Acara Jarak Jauh',
+            'event_type' => 'Pernikahan',
+            'start_time' => '08:00',
+            'end_time' => '17:00',
+            'address' => 'Jl. Trans Kalimantan Km 35',
+            'latitude' => -3.5000,
+            'longitude' => 114.7712,
+            'delivery_fee' => 0, // Client mencoba memalsukan gratis ongkir
+        ];
+
+        $response = $this->actingAs($this->customer)
+            ->withSession($session)
+            ->post(route('checkout.store'), $checkoutData);
+
+        $order = \App\Models\Order::where('user_id', $this->customer->id)->latest('id')->first();
+        $this->assertNotNull($order);
+        // Server harus menolak nilai 0 dari client dan menghitung ongkir sebenarnya
+        $this->assertGreaterThan(0, (float) $order->delivery_fee);
+        $this->assertEquals(300000 + $order->delivery_fee, (float) $order->total_amount);
+    }
 }

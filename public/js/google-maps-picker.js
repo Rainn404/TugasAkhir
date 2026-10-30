@@ -366,6 +366,27 @@
 
                     // Render Polyline on Map
                     renderRoutePolyline(data.polyline, baseLat, baseLng, destLat, destLng);
+
+                    // Update Checkout Pricing Summary secara transparan dan real-time
+                    const subtotalElem = document.getElementById('checkoutSubtotal');
+                    const shippingFeeElem = document.getElementById('checkoutShippingFeeText');
+                    const grandTotalElem = document.getElementById('checkoutGrandTotal');
+
+                    if (subtotalElem && shippingFeeElem && grandTotalElem) {
+                        const subtotal = parseFloat(subtotalElem.dataset.subtotal || 0);
+                        const fee = parseFloat(data.delivery_fee || 0);
+                        const grandTotal = subtotal + fee;
+
+                        if (fee > 0) {
+                            shippingFeeElem.className = 'text-black fw-semibold tabular-nums';
+                            shippingFeeElem.textContent = `+ Rp ${Math.round(fee).toLocaleString('id-ID')} (${data.extra_km} km ekstra)`;
+                        } else {
+                            shippingFeeElem.className = 'text-success fw-semibold tabular-nums';
+                            shippingFeeElem.textContent = 'Termasuk (Gratis ≤ 15 km)';
+                        }
+
+                        grandTotalElem.textContent = `Rp ${Math.round(grandTotal).toLocaleString('id-ID')}`;
+                    }
                 } else {
                     if (distanceElem) distanceElem.textContent = '-';
                     if (durationElem) durationElem.textContent = '-';

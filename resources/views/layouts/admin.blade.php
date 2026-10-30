@@ -87,6 +87,12 @@
             <a href="{{ route('admin.reports.payments') }}" class="sidebar-link {{ request()->routeIs('admin.reports.payments') ? 'active' : '' }}">
                 <i class="bi bi-file-earmark-ruled"></i> <span>Laporan Pembayaran</span>
             </a>
+
+            <!-- Konten & Tampilan Web -->
+            <div class="sidebar-group-label">Konten &amp; Media</div>
+            <a href="{{ route('admin.content.index') }}" class="sidebar-link {{ request()->routeIs('admin.content*') ? 'active' : '' }}">
+                <i class="bi bi-images"></i> <span>Gambar &amp; Portofolio</span>
+            </a>
             @endif
 
             <!-- Sistem -->

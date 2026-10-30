@@ -26,16 +26,18 @@
     <header class="site-header-floating">
         <nav class="navbar navbar-expand-lg site-navbar-pill" aria-label="Navigasi utama">
             <div class="navbar-pill-inner">
-                <!-- Brand Logo (Pill Capsule) -->
-                <a href="{{ route('home') }}" class="brand-arsy" aria-label="Arsy Tenda Beranda">
-                    <span class="brand-mark">ARSY</span>
-                    <span class="brand-name">TENDA</span>
-                </a>
+                <div class="navbar-pill-header">
+                    <!-- Brand Logo (Pill Capsule) -->
+                    <a href="{{ route('home') }}" class="brand-arsy" aria-label="Arsy Tenda Beranda">
+                        <span class="brand-mark">ARSY</span>
+                        <span class="brand-name">TENDA</span>
+                    </a>
 
-                <!-- Mobile Menu Toggle Button -->
-                <button class="navbar-toggler border-0 p-1" type="button" data-bs-toggle="collapse" data-bs-target="#navbarFloatingMenu" aria-controls="navbarFloatingMenu" aria-expanded="false" aria-label="Buka menu navigasi">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
+                    <!-- Mobile Menu Toggle Button -->
+                    <button class="navbar-toggler collapsed border-0 p-1" type="button" data-bs-toggle="collapse" data-bs-target="#navbarFloatingMenu" aria-controls="navbarFloatingMenu" aria-expanded="false" aria-label="Buka menu navigasi">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                </div>
 
                 <!-- Navigation Links & Actions -->
                 <div class="collapse navbar-collapse" id="navbarFloatingMenu">
@@ -211,9 +213,9 @@
             <div class="footer-bottom-bar">
                 <p class="footer-copyright">&copy; {{ date('Y') }} Arsy Tenda. Seluruh Hak Cipta Dilindungi.</p>
                 <div class="footer-legal-links">
-                    <a href="#">Syarat &amp; Ketentuan</a>
+                    <a href="#modalTerms" data-bs-toggle="modal" data-bs-target="#modalTerms">Syarat &amp; Ketentuan</a>
                     <span class="legal-divider">&middot;</span>
-                    <a href="#">Kebijakan Privasi</a>
+                    <a href="#modalPrivacy" data-bs-toggle="modal" data-bs-target="#modalPrivacy">Kebijakan Privasi</a>
                 </div>
             </div>
 
@@ -226,6 +228,84 @@
             </div>
         </div>
     </footer>
+
+    <!-- Modal Syarat & Ketentuan -->
+    <div class="modal fade" id="modalTerms" tabindex="-1" aria-labelledby="modalTermsLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-bottom px-4 pt-4 pb-3" style="border-color: #E7E2DA !important;">
+                    <div>
+                        <span class="badge-status badge-status--neutral mb-1">Ketentuan Layanan</span>
+                        <h5 class="modal-title font-display fw-bold text-black fs-5" id="modalTermsLabel">Syarat &amp; Ketentuan Sewa Arsy Tenda</h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <div class="modal-body p-4 text-secondary" style="font-size: 0.9375rem; line-height: 1.7;">
+                    <h6 class="fw-bold text-black font-display mb-2">1. Ketentuan Pemesanan &amp; Penjadwalan</h6>
+                    <p class="mb-3">
+                        Pemesanan perlengkapan sewa (tenda, meja, kursi, panggung, dan blower) dilakukan berdasarkan tanggal pelaksanaan acara. Ketersediaan unit terikat secara resmi setelah transaksi pembayaran berhasil dikonfirmasi.
+                    </p>
+
+                    <h6 class="fw-bold text-black font-display mb-2">2. Penguncian Stok 5 Jam (*Stock Hold*)</h6>
+                    <p class="mb-3">
+                        Saat pesanan baru dibuat, sistem secara otomatis mengunci stok unit yang Anda pilih selama maksimal 5 (lima) jam guna memberikan waktu penyelesaian pembayaran. Apabila masa tenggang 5 jam terlampaui tanpa konfirmasi pembayaran, sistem akan melepaskan penguncian stok dan membatalkan pesanan secara otomatis demi memberi kesempatan penyewa lain.
+                    </p>
+
+                    <h6 class="fw-bold text-black font-display mb-2">3. Pengiriman, Jarak Logistik &amp; Pemasangan</h6>
+                    <p class="mb-3">
+                        Pengiriman dan pemasangan standar bebas biaya (gratis) untuk area dalam radius hingga 15 km dari pangkalan operasional Arsy Tenda Pelaihari. Untuk pengiriman melebihi radius 15 km, berlaku tarif logistik transparan sebesar Rp 5.000 per kilometer ekstra yang dihitung berdasarkan rute jalan darat Google Routes API.
+                    </p>
+
+                    <h6 class="fw-bold text-black font-display mb-2">4. Layanan Survei Lapangan</h6>
+                    <p class="mb-3">
+                        Pelanggan dapat mengajukan survei lokasi sebelum pemesanan untuk memastikan kecukupan luas lahan, akses masuk armada, dan kelayakan teknis pemasangan tenda. Rekomendasi hasil survei dapat langsung dikonversi menjadi pesanan resmi.
+                    </p>
+
+                    <h6 class="fw-bold text-black font-display mb-2">5. Pengembalian Barang &amp; Ketentuan Denda</h6>
+                    <p class="mb-0">
+                        Setelah masa sewa berakhir, petugas operasional akan melakukan pembongkaran dan pemeriksaan fisik (*return inspection*). Sesuai aturan operasional usaha, denda diterapkan khusus pada kursi yang mengalami kerusakan sebesar Rp 25.000 per unit atau kehilangan sebesar Rp 50.000 per unit.
+                    </p>
+                </div>
+                <div class="modal-footer border-top px-4 py-3" style="border-color: #E7E2DA !important;">
+                    <button type="button" class="btn btn-dark rounded-pill px-4 py-1.5 fw-semibold" data-bs-dismiss="modal">Saya Mengerti</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Kebijakan Privasi -->
+    <div class="modal fade" id="modalPrivacy" tabindex="-1" aria-labelledby="modalPrivacyLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-bottom px-4 pt-4 pb-3" style="border-color: #E7E2DA !important;">
+                    <div>
+                        <span class="badge-status badge-status--neutral mb-1">Perlindungan Data</span>
+                        <h5 class="modal-title font-display fw-bold text-black fs-5" id="modalPrivacyLabel">Kebijakan Privasi Pengguna</h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <div class="modal-body p-4 text-secondary" style="font-size: 0.9375rem; line-height: 1.7;">
+                    <h6 class="fw-bold text-black font-display mb-2">1. Data yang Dikumpulkan</h6>
+                    <p class="mb-3">
+                        Arsy Tenda mengumpulkan informasi identitas (nama, alamat email, nomor telepon/WhatsApp), detail kegiatan acara, serta titik koordinat GPS lokasi pengiriman semata-mata untuk memproses penyewaan, verifikasi pembayaran, dan memandu armada pengantaran logistik ke lokasi Anda.
+                    </p>
+
+                    <h6 class="fw-bold text-black font-display mb-2">2. Keamanan Pembayaran Online</h6>
+                    <p class="mb-3">
+                        Seluruh transaksi pembayaran digital diproses langsung melalui gerbang pembayaran resmi Midtrans berstandar keamanan PCI-DSS. Sistem Arsy Tenda tidak pernah menyimpan nomor kartu kredit, PIN, atau data otentikasi perbankan rahasia pengguna.
+                    </p>
+
+                    <h6 class="fw-bold text-black font-display mb-2">3. Kerahasiaan &amp; Penggunaan Data</h6>
+                    <p class="mb-0">
+                        Kami menjamin bahwa data pribadi Anda tidak akan pernah diperjualbelikan, disewakan, atau dibagikan kepada pihak ketiga di luar kebutuhan operasional pengiriman dan penugasan tim lapangan resmi Arsy Tenda.
+                    </p>
+                </div>
+                <div class="modal-footer border-top px-4 py-3" style="border-color: #E7E2DA !important;">
+                    <button type="button" class="btn btn-dark rounded-pill px-4 py-1.5 fw-semibold" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Floating WhatsApp Pill Widget -->
     <a href="https://wa.me/6281234567890?text=Halo%20Arsy%20Tenda,%20saya%20ingin%20bertanya%20seputar%20sewa%20perlengkapan%20acara"

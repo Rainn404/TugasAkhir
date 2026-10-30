@@ -135,9 +135,9 @@ class OrderService
                 }
             }
 
-            if (isset($eventData['delivery_fee'])) {
-                $deliveryFee = (float) $eventData['delivery_fee'];
-            }
+            // Keamanan tarif: Biaya pengiriman dihitung secara otoritatif oleh server berdasarkan
+            // koordinat lokasi tujuan dan pengaturan sistem (bebas biaya dalam radius 15 km).
+            // Input manipulasi 'delivery_fee' dari client tidak dipercaya.
 
             $grandTotal = $rentalAmount + $deliveryFee + $surveyFee;
 

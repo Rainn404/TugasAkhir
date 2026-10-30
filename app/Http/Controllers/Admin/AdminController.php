@@ -112,7 +112,7 @@ class AdminController extends Controller
     }
 
     /**
-     * Update order status.
+     * Update order status with strict role permissions and lifecycle state transitions.
      */
     public function updateOrderStatus(Request $request, Order $order)
     {
@@ -122,10 +122,84 @@ class AdminController extends Controller
 
         $request->validate([
             'status' => ['required', 'in:draft,pending_payment,paid,confirmed,preparing,ongoing,completed,cancelled'],
+            'admin_notes' => ['nullable', 'string', 'max:500'],
         ]);
 
-        // Guard: Pesanan tidak dapat diselesaikan sebelum pemeriksaan barang kembali diverifikasi oleh admin
-        if ($request->status === 'completed') {
+        $user = Auth::user();
+        $targetStatus = $request->status;
+        $currentStatus = $order->status;
+
+        // 1. Guard jika tidak ada perubahan status
+        if ($targetStatus === $currentStatus) {
+            return back()->with('info', "Status pesanan tidak berubah (" . strtoupper(str_replace('_', ' ', $currentStatus)) . ").");
+        }
+
+        // 2. Guard status terminal
+        if (in_array($currentStatus, ['completed', 'cancelled'], true)) {
+            return back()->with('error', "Pesanan berstatus " . strtoupper($currentStatus) . " sudah bersifat final dan tidak dapat diubah lagi.");
+        }
+
+        // 3. Guard wewenang Petugas Lapangan (Pekerja)
+        if ($user->role === 'pekerja') {
+            $allowedForWorker = [
+                'confirmed' => ['preparing'],
+                'preparing' => ['ongoing'],
+            ];
+
+            if (!isset($allowedForWorker[$currentStatus]) || !in_array($targetStatus, $allowedForWorker[$currentStatus], true)) {
+                return back()->with('error', 'Petugas lapangan hanya berwenang memperbarui tahapan operasional pesanan (dari Dikonfirmasi ke Disiapkan, atau Disiapkan ke Sedang Digunakan). Status pembayaran dan pembatalan hanya dapat dikelola oleh Administrator.');
+            }
+        }
+
+        // 4. Guard matriks transisi status yang valid
+        $allowedTransitions = [
+            'pending_payment' => ['paid', 'cancelled'],
+            'paid' => ['confirmed', 'cancelled'],
+            'confirmed' => ['preparing', 'cancelled'],
+            'preparing' => ['ongoing', 'cancelled'],
+            'ongoing' => ['completed', 'cancelled'],
+        ];
+
+        if (!isset($allowedTransitions[$currentStatus]) || !in_array($targetStatus, $allowedTransitions[$currentStatus], true)) {
+            return back()->with('error', "Transisi status dari " . strtoupper(str_replace('_', ' ', $currentStatus)) . " ke " . strtoupper(str_replace('_', ' ', $targetStatus)) . " tidak diizinkan dalam alur operasional.");
+        }
+
+        // 5. Verifikasi khusus status 'paid' secara manual oleh Admin
+        if ($targetStatus === 'paid') {
+            if ($user->role !== 'admin') {
+                return back()->with('error', 'Hanya Administrator yang dapat mengonfirmasi pembayaran pesanan secara manual.');
+            }
+
+            $payment = $order->payment ?? Payment::create([
+                'order_id' => $order->id,
+                'gross_amount' => $order->total_amount,
+                'payment_status' => 'pending',
+            ]);
+
+            $payment->update([
+                'payment_status' => 'paid',
+                'paid_at' => now(),
+                'payment_type' => $payment->payment_type ?? 'manual_settlement',
+                'payload_json' => array_merge($payment->payload_json ?? [], [
+                    'manual_verification' => [
+                        'admin_id' => $user->id,
+                        'admin_name' => $user->name,
+                        'verified_at' => now()->toIso8601String(),
+                        'notes' => $request->admin_notes ?? 'Dikonfirmasi lunas oleh Admin.',
+                    ]
+                ]),
+            ]);
+
+            $order->update([
+                'status' => 'paid',
+                'payment_status' => 'paid',
+            ]);
+
+            return back()->with('success', "Status pesanan {$order->order_number} berhasil dikonfirmasi LUNAS oleh Administrator.");
+        }
+
+        // 6. Guard khusus status 'completed': pemeriksaan barang kembali wajib diverifikasi
+        if ($targetStatus === 'completed') {
             $order->load('returnInspection');
             $returnInspection = $order->returnInspection;
             if (!$returnInspection || $returnInspection->status !== 'verified') {
@@ -138,10 +212,10 @@ class AdminController extends Controller
         }
 
         $order->update([
-            'status' => $request->status,
+            'status' => $targetStatus,
         ]);
 
-        return back()->with('success', "Status pesanan {$order->order_number} berhasil diperbarui menjadi " . strtoupper($request->status) . ".");
+        return back()->with('success', "Status pesanan {$order->order_number} berhasil diperbarui menjadi " . strtoupper(str_replace('_', ' ', $targetStatus)) . ".");
     }
 
     /**
@@ -655,5 +729,155 @@ class AdminController extends Controller
         $worker->delete();
 
         return back()->with('success', 'Akun pekerja berhasil dihapus.');
+    }
+
+    /**
+     * Display page for managing homepage and portfolio media images.
+     */
+    public function content()
+    {
+        $media = [
+            'hero' => [
+                'key' => 'homepage_hero_image',
+                'name' => 'Foto Banner Hero Beranda',
+                'desc' => 'Foto utama beranda yang tampil di samping teks pembuka.',
+                'image' => SystemSetting::get('homepage_hero_image'),
+                'url' => SystemSetting::getImageUrl('homepage_hero_image', 'assets/images/hero-tent.jpg'),
+                'alt' => SystemSetting::get('homepage_hero_alt', 'Tenda Pesta Arsy Tenda Pelaihari'),
+                'default' => 'assets/images/hero-tent.jpg',
+            ],
+            'portfolio' => [
+                1 => [
+                    'slot' => 1,
+                    'key' => 'portfolio_image_1',
+                    'alt_key' => 'portfolio_alt_1',
+                    'name' => 'Slot 1: Foto Utama (Tenda Resepsi)',
+                    'desc' => 'Foto besar utama di sisi kiri atas kolase portofolio.',
+                    'image' => SystemSetting::get('portfolio_image_1'),
+                    'url' => SystemSetting::getImageUrl('portfolio_image_1', 'assets/images/references/marquee.jpg'),
+                    'alt' => SystemSetting::get('portfolio_alt_1', 'Pemasangan Tenda Resepsi Elegan Arsy Tenda'),
+                    'default' => 'assets/images/references/marquee.jpg',
+                ],
+                2 => [
+                    'slot' => 2,
+                    'key' => 'portfolio_image_2',
+                    'alt_key' => 'portfolio_alt_2',
+                    'name' => 'Slot 2: Panggung & Rigging Acara',
+                    'desc' => 'Foto panggung acara di sisi kanan atas kolase.',
+                    'image' => SystemSetting::get('portfolio_image_2'),
+                    'url' => SystemSetting::getImageUrl('portfolio_image_2', 'assets/images/references/event-stage.jpg'),
+                    'alt' => SystemSetting::get('portfolio_alt_2', 'Instalasi Panggung Rigging Acara'),
+                    'default' => 'assets/images/references/event-stage.jpg',
+                ],
+                3 => [
+                    'slot' => 3,
+                    'key' => 'portfolio_image_3',
+                    'alt_key' => 'portfolio_alt_3',
+                    'name' => 'Slot 3: Penataan Meja & Kursi',
+                    'desc' => 'Foto jamuan tamu dan penataan meja kursi di kanan tengah.',
+                    'image' => SystemSetting::get('portfolio_image_3'),
+                    'url' => SystemSetting::getImageUrl('portfolio_image_3', 'assets/images/references/table-setup.jpg'),
+                    'alt' => SystemSetting::get('portfolio_alt_3', 'Penataan Meja Kursi Jamuan Tamu'),
+                    'default' => 'assets/images/references/table-setup.jpg',
+                ],
+                4 => [
+                    'slot' => 4,
+                    'key' => 'portfolio_image_4',
+                    'alt_key' => 'portfolio_alt_4',
+                    'name' => 'Slot 4: Area Luas (Tenda Roder)',
+                    'desc' => 'Foto bentang luas memanjang di dasar kolase portofolio.',
+                    'image' => SystemSetting::get('portfolio_image_4'),
+                    'url' => SystemSetting::getImageUrl('portfolio_image_4', 'assets/images/hero-tent.jpg'),
+                    'alt' => SystemSetting::get('portfolio_alt_4', 'Suasana Tenda Roder Acara Besar'),
+                    'default' => 'assets/images/hero-tent.jpg',
+                ],
+            ],
+        ];
+
+        return view('admin.content.index', compact('media'));
+    }
+
+    /**
+     * Update homepage hero banner image.
+     */
+    public function updateHeroImage(Request $request)
+    {
+        $request->validate([
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:4096'],
+            'alt' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        if ($request->hasFile('image')) {
+            $oldImage = SystemSetting::get('homepage_hero_image');
+            if ($oldImage && Storage::disk('public')->exists($oldImage)) {
+                Storage::disk('public')->delete($oldImage);
+            }
+            $path = $request->file('image')->store('content', 'public');
+            SystemSetting::set('homepage_hero_image', $path, 'Foto banner utama hero beranda');
+        }
+
+        if ($request->filled('alt')) {
+            SystemSetting::set('homepage_hero_alt', $request->alt, 'Teks deskripsi foto hero beranda');
+        }
+
+        return back()->with('success', 'Gambar Hero Beranda berhasil diperbarui.');
+    }
+
+    /**
+     * Update a specific portfolio collage slot.
+     */
+    public function updatePortfolioImage(Request $request, int $slot)
+    {
+        if (!in_array($slot, [1, 2, 3, 4])) {
+            abort(404, 'Slot portofolio tidak valid.');
+        }
+
+        $request->validate([
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:4096'],
+            'alt' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        if ($request->hasFile('image')) {
+            $key = "portfolio_image_{$slot}";
+            $oldImage = SystemSetting::get($key);
+            if ($oldImage && Storage::disk('public')->exists($oldImage)) {
+                Storage::disk('public')->delete($oldImage);
+            }
+            $path = $request->file('image')->store('content', 'public');
+            SystemSetting::set($key, $path, "Foto portofolio kolase slot {$slot}");
+        }
+
+        if ($request->filled('alt')) {
+            SystemSetting::set("portfolio_alt_{$slot}", $request->alt, "Deskripsi foto portofolio slot {$slot}");
+        }
+
+        return back()->with('success', "Gambar Portofolio Slot {$slot} berhasil diperbarui.");
+    }
+
+    /**
+     * Reset a content image back to its system default asset.
+     */
+    public function resetContentImage(string $key)
+    {
+        $allowed = [
+            'homepage_hero_image',
+            'portfolio_image_1',
+            'portfolio_image_2',
+            'portfolio_image_3',
+            'portfolio_image_4',
+        ];
+
+        if (!in_array($key, $allowed)) {
+            abort(404, 'Kunci media tidak valid.');
+        }
+
+        $current = SystemSetting::get($key);
+        if ($current && Storage::disk('public')->exists($current)) {
+            Storage::disk('public')->delete($current);
+        }
+
+        SystemSetting::where('key', $key)->delete();
+
+        return back()->with('success', 'Gambar berhasil dikembalikan ke tampilan default.');
     }
 }

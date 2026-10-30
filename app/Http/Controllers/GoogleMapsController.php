@@ -81,6 +81,19 @@ class GoogleMapsController extends Controller
             $originLng
         );
 
+        // Tambahkan kalkulasi ongkos kirim resmi sistem untuk transparansi checkout frontend
+        $distKm = (float) ($result['distance_km'] ?? 0);
+        $freeRadius = (float) \App\Models\SystemSetting::get('free_delivery_radius_km', 15);
+        $ratePerKm = (float) \App\Models\SystemSetting::get('delivery_rate_per_km', 5000);
+        $extraKm = (int) max(0, ceil($distKm - $freeRadius));
+        $deliveryFee = (float) ($extraKm * $ratePerKm);
+
+        $result['free_delivery_radius_km'] = $freeRadius;
+        $result['delivery_rate_per_km'] = $ratePerKm;
+        $result['extra_km'] = $extraKm;
+        $result['delivery_fee'] = $deliveryFee;
+        $result['delivery_fee_formatted'] = $deliveryFee > 0 ? 'Rp ' . number_format($deliveryFee, 0, ',', '.') : 'Termasuk (Gratis)';
+
         return response()->json($result, 200);
     }
 }

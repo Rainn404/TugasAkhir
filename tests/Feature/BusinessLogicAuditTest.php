@@ -144,6 +144,55 @@ class BusinessLogicAuditTest extends TestCase
         $this->actingAs($worker)->get('/admin')->assertStatus(200);
         $this->actingAs($worker)->get('/admin/surveys')->assertStatus(200);
         $this->actingAs($worker)->get('/admin/orders')->assertStatus(200);
+
+        // Worker CANNOT change order status to paid, cancelled, or completed
+        $customer = User::factory()->create(['role' => 'customer']);
+        $event = Event::create([
+            'user_id' => $customer->id,
+            'event_name' => 'Acara Uji Role',
+            'event_date' => now()->addDays(4)->toDateString(),
+            'start_time' => '08:00',
+            'end_time' => '17:00',
+            'event_type' => 'Pernikahan',
+            'address' => 'Pelaihari',
+            'latitude' => -3.7955,
+            'longitude' => 114.7712,
+        ]);
+        $order = Order::create([
+            'user_id' => $customer->id,
+            'event_id' => $event->id,
+            'order_number' => 'ORD-ROLE-TEST',
+            'total_amount' => 500000,
+            'rental_amount' => 500000,
+            'delivery_fee' => 0,
+            'status' => 'pending_payment',
+            'payment_status' => 'pending',
+        ]);
+        $event->update(['order_id' => $order->id]);
+
+        $failAttempt = $this->actingAs($worker)->post("/admin/orders/{$order->id}/status", [
+            'status' => 'paid',
+        ]);
+        $failAttempt->assertSessionHas('error');
+        $this->assertEquals('pending_payment', $order->fresh()->status);
+
+        // Admin can mark paid manually with audit log
+        $admin = User::factory()->create(['role' => 'admin']);
+        $adminPaidAttempt = $this->actingAs($admin)->post("/admin/orders/{$order->id}/status", [
+            'status' => 'paid',
+            'admin_notes' => 'Pembayaran tunai di kantor Arsy Tenda.',
+        ]);
+        $adminPaidAttempt->assertSessionHas('success');
+        $this->assertEquals('paid', $order->fresh()->status);
+        $this->assertEquals('paid', $order->fresh()->payment_status);
+
+        // Worker can advance confirmed to preparing
+        $order->update(['status' => 'confirmed']);
+        $workerAdvance = $this->actingAs($worker)->post("/admin/orders/{$order->id}/status", [
+            'status' => 'preparing',
+        ]);
+        $workerAdvance->assertSessionHas('success');
+        $this->assertEquals('preparing', $order->fresh()->status);
     }
 
     public function test_survey_recommendation_submission_and_customer_cart_conversion(): void
@@ -391,5 +440,90 @@ class BusinessLogicAuditTest extends TestCase
         ]);
         $completeSuccess->assertSessionHas('success');
         $this->assertEquals('completed', $order->fresh()->status);
+    }
+
+    public function test_payment_retry_blocked_when_five_hour_hold_expired_or_stock_exhausted(): void
+    {
+        $customer = User::factory()->create(['role' => 'customer']);
+        $category = Category::create(['name' => 'Tenda', 'slug' => 'tenda-khusus']);
+        $inventory = Inventory::create([
+            'category_id' => $category->id,
+            'name' => 'Tenda Roder Eksklusif',
+            'slug' => 'tenda-roder-eksklusif',
+            'stock' => 2,
+            'unit' => 'unit',
+            'price' => 1500000,
+            'status' => 'available',
+        ]);
+
+        $eventDate = now()->addDays(5)->toDateString();
+        $event = Event::create([
+            'user_id' => $customer->id,
+            'event_name' => 'Acara Pernikahan Akbar',
+            'event_date' => $eventDate,
+            'start_time' => '08:00',
+            'end_time' => '18:00',
+            'event_type' => 'Pernikahan',
+            'address' => 'Pelaihari',
+            'latitude' => -3.7955,
+            'longitude' => 114.7712,
+        ]);
+
+        $order = Order::create([
+            'user_id' => $customer->id,
+            'event_id' => $event->id,
+            'order_number' => 'ORD-EXP-RETRY',
+            'total_amount' => 3000000,
+            'rental_amount' => 3000000,
+            'delivery_fee' => 0,
+            'status' => 'pending_payment',
+            'payment_status' => 'pending',
+        ]);
+        $event->update(['order_id' => $order->id]);
+
+        OrderDetail::create([
+            'order_id' => $order->id,
+            'inventory_id' => $inventory->id,
+            'quantity' => 2,
+            'unit_price' => 1500000,
+            'subtotal' => 3000000,
+        ]);
+
+        // Case A: Masa tahan 5 jam telah habis (> 5 jam)
+        Order::where('id', $order->id)->update(['created_at' => now()->subHours(6)]);
+
+        $response = $this->actingAs($customer)->post(route('payments.retry', $order->order_number));
+        $response->assertRedirect(route('dashboard.order', $order->order_number));
+        $response->assertSessionHas('error');
+        $this->assertEquals('cancelled', $order->fresh()->status);
+
+        // Case B: Pesanan baru (dalam 5 jam), tetapi inventaris tiba-tiba masuk maintenance / stok habis
+        $order2 = Order::create([
+            'user_id' => $customer->id,
+            'event_id' => $event->id,
+            'order_number' => 'ORD-STOCK-EXHAUST',
+            'total_amount' => 3000000,
+            'rental_amount' => 3000000,
+            'delivery_fee' => 0,
+            'status' => 'pending_payment',
+            'payment_status' => 'pending',
+            'created_at' => now()->subHours(1),
+        ]);
+
+        OrderDetail::create([
+            'order_id' => $order2->id,
+            'inventory_id' => $inventory->id,
+            'quantity' => 2,
+            'unit_price' => 1500000,
+            'subtotal' => 3000000,
+        ]);
+
+        // Admin menandai inventaris masuk perbaikan (maintenance)
+        $inventory->update(['status' => 'maintenance']);
+
+        $response2 = $this->actingAs($customer)->post(route('payments.retry', $order2->order_number));
+        $response2->assertRedirect(route('dashboard.order', $order2->order_number));
+        $response2->assertSessionHas('error');
+        $this->assertEquals('cancelled', $order2->fresh()->status);
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\PaymentAttempt;
+use App\Services\InventoryAvailabilityService;
 use App\Services\MidtransService;
 use App\Services\PaymentService;
 use Illuminate\Http\Request;
@@ -62,10 +63,10 @@ class PaymentController extends Controller
         ], $isUnresolved ? 202 : 200);
     }
 
-    public function retrySnapToken(string $orderNumber, MidtransService $midtransService)
+    public function retrySnapToken(string $orderNumber, MidtransService $midtransService, InventoryAvailabilityService $availabilityService)
     {
         $order = Order::where('order_number', $orderNumber)
-            ->with(['payment.attempts', 'user', 'orderDetails.inventory', 'orderDetails.variant'])
+            ->with(['payment.attempts', 'user', 'orderDetails.inventory', 'orderDetails.variant', 'event'])
             ->firstOrFail();
 
         if (Auth::user()->role !== 'admin' && $order->user_id !== Auth::id()) {
@@ -74,6 +75,27 @@ class PaymentController extends Controller
 
         if ($order->status !== 'pending_payment' || in_array($order->payment_status, ['paid', 'conflict'], true)) {
             return back()->with('error', 'Pesanan ini tidak lagi menunggu pembayaran.');
+        }
+
+        // 1. Cek batas waktu penguncian stok 5 jam untuk pesanan pending murni
+        if ($order->created_at < now()->subHours(5) && $order->payment_status === 'pending') {
+            $order->update([
+                'status' => 'cancelled',
+                'notes' => trim(($order->notes ? $order->notes . ' | ' : '') . '[Sistem: Dibatalkan otomatis karena batas waktu penguncian stok 5 jam berakhir tanpa pembayaran]'),
+            ]);
+            return redirect()->route('dashboard.order', $orderNumber)
+                ->with('error', 'Batas penguncian stok selama 5 jam telah kedaluwarsa. Pesanan dibatalkan otomatis; silakan buat pesanan baru.');
+        }
+
+        // 2. Validasi ulang ketersediaan stok sebelum mencoba pembayaran baru
+        $stockCheck = $availabilityService->validateOrderAvailability($order);
+        if (!$stockCheck[0]) {
+            $order->update([
+                'status' => 'cancelled',
+                'notes' => trim(($order->notes ? $order->notes . ' | ' : '') . '[Sistem: Dibatalkan karena stok tidak lagi tersedia saat percobaan bayar: ' . $stockCheck[1] . ']'),
+            ]);
+            return redirect()->route('dashboard.order', $orderNumber)
+                ->with('error', $stockCheck[1]);
         }
 
         $payment = $order->payment ?? Payment::create([

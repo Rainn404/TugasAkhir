@@ -134,6 +134,12 @@ Route::middleware('auth')->group(function () {
             Route::get('/reports/orders', [ReportController::class, 'orders'])->name('reports.orders');
             Route::get('/reports/inventories', [ReportController::class, 'inventories'])->name('reports.inventories');
             Route::get('/reports/payments', [ReportController::class, 'payments'])->name('reports.payments');
+
+            // Manajemen Gambar Beranda & Portofolio
+            Route::get('/content', [AdminController::class, 'content'])->name('content.index');
+            Route::post('/content/update-hero', [AdminController::class, 'updateHeroImage'])->name('content.update-hero');
+            Route::post('/content/update-portfolio/{slot}', [AdminController::class, 'updatePortfolioImage'])->name('content.update-portfolio');
+            Route::post('/content/reset/{key}', [AdminController::class, 'resetContentImage'])->name('content.reset');
         });
     });
 });

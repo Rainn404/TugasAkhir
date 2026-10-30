@@ -39,17 +39,44 @@
                 <div class="alert alert-danger small mb-0 rounded-3" role="alert">
                     Status pesanan dikunci karena lebih dari satu attempt Midtrans terkonfirmasi lunas. Rekonsiliasi transaksi terlebih dahulu.
                 </div>
+            @elseif(in_array($order->status, ['completed', 'cancelled']))
+                <div class="alert alert-secondary small mb-0 rounded-3" role="status">
+                    <i class="bi bi-info-circle me-1"></i> Pesanan ini berstatus <strong>{{ strtoupper($order->status) }}</strong> (tahap akhir) dan tidak dapat diubah lagi.
+                </div>
             @else
                 <form action="{{ route('admin.orders.update-status', $order->id) }}" method="POST" class="d-flex flex-column flex-sm-row gap-2">
                     @csrf
                     <select name="status" class="form-select rounded-3 fw-semibold">
-                        <option value="pending_payment" {{ $order->status === 'pending_payment' ? 'selected' : '' }}>Menunggu Pembayaran</option>
-                        <option value="paid" {{ $order->status === 'paid' ? 'selected' : '' }}>Dibayar (Lunas)</option>
-                        <option value="confirmed" {{ $order->status === 'confirmed' ? 'selected' : '' }}>Dikonfirmasi (Siap Jadwal)</option>
-                        <option value="preparing" {{ $order->status === 'preparing' ? 'selected' : '' }}>Disiapkan (Muat Truk &amp; Packing)</option>
-                        <option value="ongoing" {{ $order->status === 'ongoing' ? 'selected' : '' }}>Sedang Digunakan (Terpasang di Lokasi)</option>
-                        <option value="completed" {{ $order->status === 'completed' ? 'selected' : '' }}>Selesai (Bongkar &amp; Kembali ke Gudang)</option>
-                        <option value="cancelled" {{ $order->status === 'cancelled' ? 'selected' : '' }}>Dibatalkan</option>
+                        @if(auth()->user()->role === 'pekerja')
+                            @if($order->status === 'confirmed')
+                                <option value="confirmed" selected>-- Pilih Tahapan Operasional --</option>
+                                <option value="preparing">Disiapkan (Muat Truk &amp; Packing)</option>
+                            @elseif($order->status === 'preparing')
+                                <option value="preparing" selected>-- Pilih Tahapan Operasional --</option>
+                                <option value="ongoing">Sedang Digunakan (Terpasang di Lokasi)</option>
+                            @else
+                                <option value="{{ $order->status }}" selected>{{ strtoupper(str_replace('_', ' ', $order->status)) }} (Dikelola Administrator)</option>
+                            @endif
+                        @else
+                            {{-- Admin View: Hanya tampilkan transisi yang valid --}}
+                            <option value="{{ $order->status }}" selected>Status Saat Ini: {{ strtoupper(str_replace('_', ' ', $order->status)) }}</option>
+                            @if($order->status === 'pending_payment')
+                                <option value="paid">Dibayar (Lunas Manual oleh Admin)</option>
+                                <option value="cancelled">Dibatalkan</option>
+                            @elseif($order->status === 'paid')
+                                <option value="confirmed">Dikonfirmasi (Siap Jadwal)</option>
+                                <option value="cancelled">Dibatalkan</option>
+                            @elseif($order->status === 'confirmed')
+                                <option value="preparing">Disiapkan (Muat Truk &amp; Packing)</option>
+                                <option value="cancelled">Dibatalkan</option>
+                            @elseif($order->status === 'preparing')
+                                <option value="ongoing">Sedang Digunakan (Terpasang di Lokasi)</option>
+                                <option value="cancelled">Dibatalkan</option>
+                            @elseif($order->status === 'ongoing')
+                                <option value="completed">Selesai (Setelah Verifikasi Pengembalian)</option>
+                                <option value="cancelled">Dibatalkan</option>
+                            @endif
+                        @endif
                     </select>
                     <button type="submit" class="btn btn-dark rounded-pill px-4 py-2 fw-semibold text-nowrap">
                         Update Status
