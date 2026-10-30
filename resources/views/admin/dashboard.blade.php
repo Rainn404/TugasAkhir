@@ -1,56 +1,72 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 mb-md-4 gap-2 gap-md-3 page-editorial-header">
     <div>
-        <h4 class="fw-bold text-black mb-1">Dashboard Administrator</h4>
-        <p class="text-secondary small mb-0">Ringkasan operasional dan statistik persewaan Arsy Tenda.</p>
+        <span class="page-eyebrow">Operasional Arsy Tenda</span>
+        <h1 class="page-headline mb-1 font-display">{{ auth()->user()->role === 'admin' ? 'Dashboard Administrator' : 'Dashboard Petugas Lapangan' }}</h1>
+        <p class="page-subtext">{{ auth()->user()->role === 'admin' ? 'Ringkasan operasional dan statistik persewaan Arsy Tenda.' : 'Ringkasan tugas lapangan dan jadwal operasional Anda.' }}</p>
     </div>
-    <span class="badge bg-dark px-3 py-2 rounded-pill small">
-        <i class="bi bi-calendar3 me-1"></i> {{ date('l, d F Y') }}
-    </span>
+    <div>
+        <span class="badge-status badge-status--neutral px-3 py-2">
+            <i class="bi bi-calendar3 me-1"></i> {{ date('l, d F Y') }}
+        </span>
+    </div>
 </div>
 
 <!-- Statistic Cards -->
-<div class="row g-3 mb-4">
-    <div class="col-xl-3 col-sm-6">
-        <div class="card p-3 border rounded-3 bg-white shadow-sm">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="text-secondary small fw-semibold">Total Pendapatan</span>
-                <span class="p-2 rounded bg-light"><i class="bi bi-cash-stack fs-5 text-black"></i></span>
+<div class="row g-2 g-md-3 mb-4">
+    @if(auth()->user()->role === 'admin')
+    <div class="col-6 col-lg-3">
+        <div class="editorial-stat-card">
+            <div class="d-flex justify-content-between align-items-start gap-1">
+                <span class="stat-kicker">Total Pendapatan</span>
+                <span class="badge-status badge-status--neutral p-1 p-sm-1.5"><i class="bi bi-cash-stack fs-6 text-black"></i></span>
             </div>
-            <h4 class="fw-bold text-black mb-0">Rp {{ number_format($stats['total_sales'], 0, ',', '.') }}</h4>
-            <small class="text-secondary">Akumulasi pesanan valid</small>
+            <div class="stat-number my-1">Rp {{ number_format($stats['total_sales'], 0, ',', '.') }}</div>
+            <p class="stat-hint">Akumulasi pesanan lunas</p>
         </div>
     </div>
-    <div class="col-xl-3 col-sm-6">
-        <div class="card p-3 border rounded-3 bg-white shadow-sm">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="text-warning small fw-semibold">Menunggu Pembayaran</span>
-                <span class="p-2 rounded bg-warning bg-opacity-10"><i class="bi bi-clock-history fs-5 text-warning"></i></span>
+    @else
+    <div class="col-6 col-lg-3">
+        <div class="editorial-stat-card">
+            <div class="d-flex justify-content-between align-items-start gap-1">
+                <span class="stat-kicker" style="color: #2563EB;">Survei Saya</span>
+                <span class="badge-status badge-status--info p-1 p-sm-1.5"><i class="bi bi-person-check fs-6 text-primary"></i></span>
             </div>
-            <h4 class="fw-bold text-warning mb-0">{{ $stats['pending_payment_count'] }}</h4>
-            <small class="text-secondary">Pesanan belum lunas</small>
+            <div class="stat-number my-1" style="color: #2563EB;">{{ $stats['my_surveys_count'] ?? 0 }}</div>
+            <p class="stat-hint">Total tugas survei Anda</p>
         </div>
     </div>
-    <div class="col-xl-3 col-sm-6">
-        <div class="card p-3 border rounded-3 bg-white shadow-sm">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="text-success small fw-semibold">Pesanan Aktif / Lunas</span>
-                <span class="p-2 rounded bg-success bg-opacity-10"><i class="bi bi-check2-circle fs-5 text-success"></i></span>
+    @endif
+    <div class="col-6 col-lg-3">
+        <div class="editorial-stat-card">
+            <div class="d-flex justify-content-between align-items-start gap-1">
+                <span class="stat-kicker" style="color: #B45309;">Menunggu Bayar</span>
+                <span class="badge-status badge-status--warning p-1 p-sm-1.5"><i class="bi bi-clock-history fs-6" style="color: #B45309;"></i></span>
             </div>
-            <h4 class="fw-bold text-success mb-0">{{ $stats['active_orders'] }}</h4>
-            <small class="text-secondary">Dalam proses persiapan & acara</small>
+            <div class="stat-number my-1" style="color: #B45309;">{{ $stats['pending_payment_count'] }}</div>
+            <p class="stat-hint">Pesanan belum lunas</p>
         </div>
     </div>
-    <div class="col-xl-3 col-sm-6">
-        <div class="card p-3 border rounded-3 bg-white shadow-sm">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="text-secondary small fw-semibold">Survei Lapangan Aktif</span>
-                <span class="p-2 rounded bg-light"><i class="bi bi-geo-alt fs-5 text-black"></i></span>
+    <div class="col-6 col-lg-3">
+        <div class="editorial-stat-card">
+            <div class="d-flex justify-content-between align-items-start gap-1">
+                <span class="stat-kicker" style="color: #15803D;">Pesanan Aktif</span>
+                <span class="badge-status badge-status--success p-1 p-sm-1.5"><i class="bi bi-check2-circle fs-6" style="color: #15803D;"></i></span>
             </div>
-            <h4 class="fw-bold text-black mb-0">{{ $stats['active_surveys_count'] }}</h4>
-            <small class="text-secondary">Menunggu / dijadwalkan</small>
+            <div class="stat-number my-1" style="color: #15803D;">{{ $stats['active_orders'] }}</div>
+            <p class="stat-hint">Tahap persiapan &amp; acara</p>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="editorial-stat-card">
+            <div class="d-flex justify-content-between align-items-start gap-1">
+                <span class="stat-kicker">Survei Lapangan</span>
+                <span class="badge-status badge-status--neutral p-1 p-sm-1.5"><i class="bi bi-geo-alt fs-6 text-black"></i></span>
+            </div>
+            <div class="stat-number my-1">{{ $stats['active_surveys_count'] }}</div>
+            <p class="stat-hint">Menunggu / dijadwalkan</p>
         </div>
     </div>
 </div>
@@ -58,41 +74,54 @@
 <div class="row g-4 mb-4">
     <!-- Pesanan Terbaru -->
     <div class="col-lg-7">
-        <div class="card p-4 border rounded-4 bg-white shadow-sm h-100">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="fw-bold text-black mb-0">Pesanan Terbaru</h6>
-                <a href="{{ route('admin.orders') }}" class="small text-secondary text-decoration-none">Lihat Semua →</a>
+        <div class="editorial-card overflow-hidden h-100">
+            <div class="editorial-card-header">
+                <h5 class="fw-bold text-black mb-0 font-display fs-6">Pesanan Terbaru</h5>
+                <a href="{{ route('admin.orders') }}" class="small text-secondary text-decoration-none fw-semibold">Lihat Semua →</a>
             </div>
 
             <div class="table-responsive">
-                <table class="table align-middle mb-0 small">
-                    <thead class="table-light">
+                <table class="editorial-table align-middle">
+                    <thead>
                         <tr>
                             <th>No. Order</th>
                             <th>Pelanggan</th>
                             <th>Total</th>
                             <th>Status</th>
-                            <th>Aksi</th>
+                            <th class="text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($recentOrders as $order)
                             <tr>
-                                <td class="font-monospace fw-bold">{{ $order->order_number }}</td>
-                                <td>{{ $order->user->name ?? '-' }}</td>
-                                <td class="fw-semibold">Rp {{ number_format($order->total_amount, 0, ',', '.') }}</td>
+                                <td class="font-monospace fw-bold small text-black">{{ $order->order_number }}</td>
+                                <td class="small">{{ $order->user->name ?? '-' }}</td>
+                                <td class="fw-semibold small text-black">Rp {{ number_format($order->total_amount, 0, ',', '.') }}</td>
                                 <td>
-                                    <span class="badge bg-light text-dark border">{{ strtoupper($order->status) }}</span>
+                                    @php
+                                        $badges = [
+                                            'pending_payment' => 'badge-status--warning',
+                                            'paid' => 'badge-status--success',
+                                            'confirmed' => 'badge-status--success',
+                                            'preparing' => 'badge-status--info',
+                                            'ongoing' => 'badge-status--neutral',
+                                            'completed' => 'badge-status--success',
+                                            'cancelled' => 'badge-status--danger',
+                                        ];
+                                    @endphp
+                                    <span class="badge-status {{ $badges[$order->status] ?? 'badge-status--neutral' }}" style="font-size: 0.7rem;">
+                                        {{ strtoupper(str_replace('_', ' ', $order->status)) }}
+                                    </span>
                                 </td>
-                                <td>
-                                    <a href="{{ route('admin.orders.show', $order->id) }}" class="btn btn-outline-dark btn-sm py-0 px-2 rounded">
+                                <td class="text-center">
+                                    <a href="{{ route('admin.orders.show', $order->id) }}" class="btn btn-outline-dark btn-sm rounded-pill px-3 py-0.5 text-nowrap" style="font-size: 0.75rem;">
                                         Detail
                                     </a>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center text-secondary py-3">Belum ada pesanan masuk.</td>
+                                <td colspan="5" class="text-center text-secondary py-4 small">Belum ada pesanan masuk.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -103,25 +132,25 @@
 
     <!-- Jadwal Acara Terdekat -->
     <div class="col-lg-5">
-        <div class="card p-4 border rounded-4 bg-white shadow-sm h-100">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="fw-bold text-black mb-0">Jadwal Acara Terdekat</h6>
-                <a href="{{ route('admin.events') }}" class="small text-secondary text-decoration-none">Lihat Semua →</a>
+        <div class="editorial-card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom" style="border-color: #E7E2DA !important;">
+                <h5 class="fw-bold text-black mb-0 font-display fs-6">Jadwal Acara Terdekat</h5>
+                <a href="{{ route('admin.events') }}" class="small text-secondary text-decoration-none fw-semibold">Lihat Semua →</a>
             </div>
 
             <div class="list-group list-group-flush">
                 @forelse($upcomingEvents as $evt)
-                    <div class="list-group-item px-0 py-2.5 d-flex justify-content-between align-items-center">
+                    <div class="list-group-item px-0 py-2.5 d-flex justify-content-between align-items-center border-bottom last-border-0" style="border-color: #F0ECE6 !important; background: transparent;">
                         <div>
                             <h6 class="fw-bold text-black mb-0 small">{{ $evt->event_name }}</h6>
                             <small class="text-secondary">{{ $evt->user->name ?? '-' }} &bull; {{ $evt->event_type }}</small>
                         </div>
-                        <span class="badge bg-dark small">
+                        <span class="badge-status badge-status--neutral" style="font-size: 0.72rem;">
                             {{ \Carbon\Carbon::parse($evt->event_date)->format('d M') }}
                         </span>
                     </div>
                 @empty
-                    <div class="text-center text-secondary py-3 small">Tidak ada acara mendatang.</div>
+                    <div class="text-center text-secondary py-4 small">Tidak ada acara mendatang.</div>
                 @endforelse
             </div>
         </div>
@@ -129,53 +158,97 @@
 </div>
 
 <div class="row g-4">
-    <!-- Inventaris Stok Rendah -->
-    <div class="col-lg-6">
-        <div class="card p-4 border rounded-4 bg-white shadow-sm">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="fw-bold text-black mb-0">Inventaris Stok Terbatas / Menipis</h6>
-                <a href="{{ route('admin.inventories') }}" class="small text-secondary text-decoration-none">Kelola →</a>
-            </div>
+    @if($isWorker)
+        <!-- Tugas Operasional Pesanan untuk Pekerja -->
+        <div class="col-lg-6">
+            <div class="editorial-card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom" style="border-color: #E7E2DA !important;">
+                    <h5 class="fw-bold text-black mb-0 font-display fs-6">
+                        <i class="bi bi-list-task me-1 text-secondary"></i> Tugas Operasional Anda
+                    </h5>
+                    <span class="small text-secondary fw-semibold">{{ $myAssignments->count() }} Tugas</span>
+                </div>
 
-            <ul class="list-group list-group-flush">
-                @forelse($lowStockInventories as $inv)
-                    <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="fw-semibold text-black small d-block">{{ $inv->name }}</span>
-                            <small class="text-secondary">{{ $inv->category->name }}</small>
-                        </div>
-                        <span class="badge {{ $inv->stock <= 5 ? 'bg-danger' : 'bg-warning text-dark' }} small">
-                            Tersisa: {{ $inv->stock }} {{ $inv->unit }}
-                        </span>
-                    </li>
-                @empty
-                    <li class="list-group-item px-0 py-3 text-center text-secondary small">Seluruh stok inventaris dalam kondisi aman.</li>
-                @endforelse
-            </ul>
+                <ul class="list-group list-group-flush mb-0">
+                    @forelse($myAssignments as $assignment)
+                        @php
+                            $taskLabels = [
+                                'persiapan' => 'Persiapan Barang',
+                                'pengiriman' => 'Pengiriman Lokasi',
+                                'pemasangan' => 'Pemasangan Tenda / Alat',
+                                'pemeriksaan_kembali' => 'Pemeriksaan Pengembalian',
+                            ];
+                        @endphp
+                        <li class="list-group-item px-0 py-2.5 d-flex justify-content-between align-items-center border-bottom last-border-0" style="border-color: #F0ECE6 !important; background: transparent;">
+                            <div>
+                                <span class="fw-semibold text-black small d-block">
+                                    {{ $taskLabels[$assignment->task_type] ?? $assignment->task_type }}
+                                </span>
+                                <small class="text-secondary">
+                                    Pesanan #{{ $assignment->order->order_number ?? '-' }} &bull; {{ $assignment->order->event->event_name ?? 'Acara' }}
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                <a href="{{ route('admin.orders.show', $assignment->order_id) }}" class="btn btn-outline-dark btn-sm rounded-pill px-2.5 py-0.5" style="font-size: 0.72rem;">
+                                    Buka Pesanan
+                                </a>
+                            </div>
+                        </li>
+                    @empty
+                        <li class="list-group-item px-0 py-3 text-center text-secondary small" style="background: transparent;">Belum ada tugas operasional yang ditugaskan kepada Anda.</li>
+                    @endforelse
+                </ul>
+            </div>
         </div>
-    </div>
+    @else
+        <!-- Inventaris Stok Rendah (Admin Only) -->
+        <div class="col-lg-6">
+            <div class="editorial-card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom" style="border-color: #E7E2DA !important;">
+                    <h5 class="fw-bold text-black mb-0 font-display fs-6">Inventaris Stok Menipis</h5>
+                    <a href="{{ route('admin.inventories') }}" class="small text-secondary text-decoration-none fw-semibold">Kelola →</a>
+                </div>
+
+                <ul class="list-group list-group-flush mb-0">
+                    @forelse($lowStockInventories as $inv)
+                        <li class="list-group-item px-0 py-2.5 d-flex justify-content-between align-items-center border-bottom last-border-0" style="border-color: #F0ECE6 !important; background: transparent;">
+                            <div>
+                                <span class="fw-semibold text-black small d-block">{{ $inv->name }}</span>
+                                <small class="text-secondary">{{ $inv->category->name }}</small>
+                            </div>
+                            <span class="badge-status {{ $inv->stock <= 5 ? 'badge-status--danger' : 'badge-status--warning' }}" style="font-size: 0.72rem;">
+                                Tersisa: {{ $inv->stock }} {{ $inv->unit }}
+                            </span>
+                        </li>
+                    @empty
+                        <li class="list-group-item px-0 py-3 text-center text-secondary small" style="background: transparent;">Seluruh stok inventaris dalam kondisi aman.</li>
+                    @endforelse
+                </ul>
+            </div>
+        </div>
+    @endif
 
     <!-- Survei Terbaru -->
     <div class="col-lg-6">
-        <div class="card p-4 border rounded-4 bg-white shadow-sm">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="fw-bold text-black mb-0">Pengajuan Survei Lokasi Terbaru</h6>
-                <a href="{{ route('admin.surveys') }}" class="small text-secondary text-decoration-none">Kelola →</a>
+        <div class="editorial-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom" style="border-color: #E7E2DA !important;">
+                <h5 class="fw-bold text-black mb-0 font-display fs-6">Pengajuan Survei Lokasi Terbaru</h5>
+                <a href="{{ route('admin.surveys') }}" class="small text-secondary text-decoration-none fw-semibold">Kelola →</a>
             </div>
 
-            <ul class="list-group list-group-flush">
+            <ul class="list-group list-group-flush mb-0">
                 @forelse($recentSurveys as $srv)
-                    <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                    <li class="list-group-item px-0 py-2.5 d-flex justify-content-between align-items-center border-bottom last-border-0" style="border-color: #F0ECE6 !important; background: transparent;">
                         <div>
                             <span class="fw-semibold text-black small d-block">{{ $srv->event_name }}</span>
                             <small class="text-secondary">{{ $srv->user->name ?? '-' }} &bull; {{ \Carbon\Carbon::parse($srv->event_date)->format('d M Y') }}</small>
                         </div>
-                        <span class="badge {{ $srv->status === 'menunggu' ? 'bg-warning text-dark' : 'bg-dark' }} small">
+                        <span class="badge-status {{ $srv->status === 'menunggu' ? 'badge-status--warning' : 'badge-status--neutral' }}" style="font-size: 0.72rem;">
                             {{ strtoupper($srv->status) }}
                         </span>
                     </li>
                 @empty
-                    <li class="list-group-item px-0 py-3 text-center text-secondary small">Belum ada pengajuan survei.</li>
+                    <li class="list-group-item px-0 py-3 text-center text-secondary small" style="background: transparent;">Belum ada pengajuan survei.</li>
                 @endforelse
             </ul>
         </div>

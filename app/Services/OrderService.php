@@ -7,21 +7,25 @@ use App\Models\Inventory;
 use App\Models\Order;
 use App\Models\OrderDetail;
 use App\Models\Payment;
-use Illuminate\Support\Facades\Auth;
+use App\Models\PaymentAttempt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Str;
 
 class OrderService
 {
     protected InventoryAvailabilityService $availabilityService;
     protected MidtransService $midtransService;
+    protected PaymentService $paymentService;
 
     public function __construct(
         InventoryAvailabilityService $availabilityService,
-        MidtransService $midtransService
+        MidtransService $midtransService,
+        PaymentService $paymentService
     ) {
         $this->availabilityService = $availabilityService;
         $this->midtransService = $midtransService;
+        $this->paymentService = $paymentService;
     }
 
     /**
@@ -34,22 +38,109 @@ class OrderService
      * @return Order
      * @throws \Exception
      */
-    public function createOrder(array $cart, string $cartDate, array $eventData, int $userId): Order
+    public function createOrder(array $cart, string $cartDate, array $eventData, int $userId, ?string $checkoutKey = null): Order
     {
-        return DB::transaction(function () use ($cart, $cartDate, $eventData, $userId) {
-            // 1. Double check availability with lock
+        if ($checkoutKey !== null) {
+            $existingOrder = Order::where('user_id', $userId)
+                ->where('checkout_key', $checkoutKey)
+                ->first();
+
+            if ($existingOrder) {
+                return $existingOrder;
+            }
+        }
+
+        try {
+            $creation = DB::transaction(function () use ($cart, $cartDate, $eventData, $userId, $checkoutKey) {
+            if ($checkoutKey !== null) {
+                $existingOrder = Order::where('user_id', $userId)
+                    ->where('checkout_key', $checkoutKey)
+                    ->lockForUpdate()
+                    ->first();
+                if ($existingOrder) {
+                    return ['order' => $existingOrder, 'created' => false];
+                }
+            }
+
+            $inventoryIds = collect($cart)
+                ->pluck('inventory_id')
+                ->filter()
+                ->unique()
+                ->sort()
+                ->values();
+            $lockedInventories = Inventory::with('variants')
+                ->whereIn('id', $inventoryIds)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
             $validation = $this->availabilityService->validateCartAvailability($cart, $cartDate);
             if (!$validation[0]) {
                 throw new \Exception($validation[1]);
             }
 
-            // 2. Calculate server-side total
+            $pricedItems = [];
             $totalAmount = 0;
             foreach ($cart as $item) {
-                $totalAmount += $item['subtotal'];
+                $inventory = $lockedInventories->get((int) $item['inventory_id']);
+                if (!$inventory) {
+                    throw new \Exception('Perlengkapan tidak ditemukan di sistem.');
+                }
+
+                $variantId = $item['variant_id'] ?? null;
+                $variant = $variantId ? $inventory->variants->firstWhere('id', (int) $variantId) : null;
+                if ($variantId && !$variant) {
+                    throw new \Exception('Variasi perlengkapan tidak sesuai dengan barang yang dipilih.');
+                }
+
+                $quantity = filter_var($item['quantity'] ?? null, FILTER_VALIDATE_INT);
+                if ($quantity === false || $quantity < 1) {
+                    throw new \Exception('Kuantitas perlengkapan tidak valid.');
+                }
+
+                $unitPrice = (float) $inventory->price + (float) ($variant?->price_modifier ?? 0);
+                $subtotal = $unitPrice * $quantity;
+                $totalAmount += $subtotal;
+                $pricedItems[] = [
+                    ...$item,
+                    'inventory_id' => $inventory->id,
+                    'variant_id' => $variant?->id,
+                    'quantity' => $quantity,
+                    'unit_price' => $unitPrice,
+                    'subtotal' => $subtotal,
+                ];
             }
 
-            // 3. Create Event
+            $rentalAmount = $totalAmount;
+            $deliveryFee = 0.00;
+            $surveyFee = (float) ($eventData['survey_fee'] ?? 0.00);
+
+            if (isset($eventData['latitude'], $eventData['longitude'])) {
+                $baseLat = (float) config('services.google_maps.base_location.latitude', -3.7955);
+                $baseLng = (float) config('services.google_maps.base_location.longitude', 114.7712);
+                $destLat = (float) $eventData['latitude'];
+                $destLng = (float) $eventData['longitude'];
+
+                if ($destLat != 0.0 && $destLng != 0.0) {
+                    $mapsService = app(GoogleMapsService::class);
+                    $distKm = $mapsService->calculateHaversineDistance($baseLat, $baseLng, $destLat, $destLng);
+                    $freeRadius = (float) \App\Models\SystemSetting::get('free_delivery_radius_km', 15);
+                    $ratePerKm = (float) \App\Models\SystemSetting::get('delivery_rate_per_km', 5000);
+
+                    if ($distKm > $freeRadius) {
+                        $extraKm = ceil($distKm - $freeRadius);
+                        $deliveryFee = $extraKm * $ratePerKm;
+                    }
+                }
+            }
+
+            if (isset($eventData['delivery_fee'])) {
+                $deliveryFee = (float) $eventData['delivery_fee'];
+            }
+
+            $grandTotal = $rentalAmount + $deliveryFee + $surveyFee;
+
             $event = Event::create([
                 'user_id' => $userId,
                 'event_name' => $eventData['event_name'],
@@ -64,25 +155,26 @@ class OrderService
                 'status' => 'scheduled',
             ]);
 
-            // 4. Generate Unique Order Number
             $orderNumber = 'ORD-' . date('Ymd') . '-' . strtoupper(Str::random(4));
             while (Order::where('order_number', $orderNumber)->exists()) {
                 $orderNumber = 'ORD-' . date('Ymd') . '-' . strtoupper(Str::random(4));
             }
 
-            // 5. Create Order
             $order = Order::create([
                 'order_number' => $orderNumber,
+                'checkout_key' => $checkoutKey,
                 'user_id' => $userId,
                 'event_id' => $event->id,
-                'total_amount' => $totalAmount,
+                'rental_amount' => $rentalAmount,
+                'delivery_fee' => $deliveryFee,
+                'survey_fee' => $surveyFee,
+                'total_amount' => $grandTotal,
                 'status' => 'pending_payment',
                 'payment_status' => 'pending',
                 'notes' => $eventData['notes'] ?? null,
             ]);
 
-            // 6. Create Order Details
-            foreach ($cart as $item) {
+            foreach ($pricedItems as $item) {
                 OrderDetail::create([
                     'order_id' => $order->id,
                     'inventory_id' => $item['inventory_id'],
@@ -94,24 +186,103 @@ class OrderService
                 ]);
             }
 
-            // 7. Initialize Payment Record & Request Snap Token
             $payment = Payment::create([
                 'order_id' => $order->id,
-                'gross_amount' => $totalAmount,
+                'gross_amount' => $grandTotal,
                 'payment_status' => 'pending',
             ]);
 
             $order->load(['user', 'orderDetails.inventory', 'orderDetails.variant']);
-            $snapResult = $this->midtransService->createSnapToken($order);
+            $midtransOrderId = $orderNumber . '-A' . strtoupper(Str::random(8));
+            $attempt = PaymentAttempt::create([
+                'payment_id' => $payment->id,
+                'midtrans_order_id' => $midtransOrderId,
+                'gross_amount' => $grandTotal,
+                'status' => 'creating',
+            ]);
+            $order->load(['user', 'orderDetails.inventory', 'orderDetails.variant']);
 
-            if ($snapResult && isset($snapResult['token'])) {
-                $payment->update([
-                    'snap_token' => $snapResult['token'],
-                    'payload_json' => $snapResult,
-                ]);
+            return ['order' => $order, 'created' => true];
+            });
+        } catch (QueryException $exception) {
+            if ($checkoutKey !== null) {
+                $existingOrder = Order::where('user_id', $userId)
+                    ->where('checkout_key', $checkoutKey)
+                    ->first();
+                if ($existingOrder) {
+                    return $existingOrder;
+                }
             }
 
+            throw $exception;
+        }
+
+        $order = $creation['order'];
+        if (!$creation['created']) {
             return $order;
+        }
+
+        $payment = $order->payment()->firstOrFail();
+        $attempt = $payment->attempts()->latest('id')->firstOrFail();
+        $order->load(['user', 'orderDetails.inventory', 'orderDetails.variant']);
+        $snapResult = $this->midtransService->createSnapToken($order, $attempt->midtrans_order_id);
+
+        if (isset($snapResult['status_payload']) && is_array($snapResult['status_payload'])) {
+            $statusResult = $this->paymentService->processStatusResponse($snapResult['status_payload']);
+            if ($statusResult[0] || $statusResult[2] === 409) {
+                return $order->refresh();
+            }
+
+            $snapResult['state'] = 'unknown';
+            $snapResult['message'] = 'Status transaksi Midtrans belum dapat diproses dan perlu diperiksa kembali.';
+        }
+
+        DB::transaction(function () use ($attempt, $payment, $order, $snapResult) {
+            $lockedAttempt = PaymentAttempt::whereKey($attempt->id)->lockForUpdate()->firstOrFail();
+            $lockedPayment = Payment::whereKey($payment->id)->lockForUpdate()->firstOrFail();
+            $lockedOrder = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+
+            if (($snapResult['state'] ?? null) === 'created' && !empty($snapResult['token'])) {
+                if (!in_array($lockedAttempt->status, ['paid', 'failed', 'rejected', 'cancelled', 'expired'], true)) {
+                    $lockedAttempt->update([
+                        'status' => 'pending',
+                        'snap_token' => $snapResult['token'],
+                        'payload_json' => $snapResult['payload'],
+                    ]);
+                    if (!in_array($lockedPayment->payment_status, ['paid', 'conflict'], true)) {
+                        $lockedPayment->update([
+                            'payment_status' => 'pending',
+                            'snap_token' => $snapResult['token'],
+                            'payload_json' => ['active_attempt_id' => $lockedAttempt->id],
+                        ]);
+                    }
+                }
+            } else {
+                $attemptStatus = $snapResult['state'] ?? 'unknown';
+                if (!in_array($lockedAttempt->status, ['paid', 'failed', 'rejected', 'cancelled', 'expired'], true)) {
+                    $summaryStatus = match ($attemptStatus) {
+                        'pending' => 'pending',
+                        'paid' => 'paid',
+                        'rejected', 'failed' => 'failed',
+                        default => 'unknown',
+                    };
+                    $lockedAttempt->update([
+                        'status' => $attemptStatus,
+                        'last_error' => $snapResult['message'] ?? 'Token response was not confirmed; check Midtrans status before retrying.',
+                        'payload_json' => $snapResult,
+                    ]);
+                    $lockedPayment->update([
+                        'payment_status' => $summaryStatus,
+                        'payload_json' => ['active_attempt_id' => $lockedAttempt->id],
+                    ]);
+                    $lockedOrder->update([
+                        'payment_status' => $summaryStatus,
+                        'status' => $summaryStatus === 'paid' ? 'paid' : 'pending_payment',
+                    ]);
+                }
+            }
         });
+
+        return $order->refresh();
     }
 }

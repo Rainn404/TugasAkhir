@@ -24,12 +24,35 @@ class Survey extends Model
         'admin_notes',
         'assigned_worker_id',
         'worker_instructions',
+        'survey_result',
+        'recommendations_json',
+        'recommended_at',
+        'recommendation_expires_at',
+        'survey_fee',
+        'survey_payment_status',
     ];
 
     protected $casts = [
         'event_date' => 'date',
         'survey_date' => 'date',
+        'recommendations_json' => 'array',
+        'recommended_at' => 'datetime',
+        'recommendation_expires_at' => 'datetime',
+        'survey_fee' => 'decimal:2',
     ];
+
+    public function isRecommendationActive(): bool
+    {
+        if (empty($this->recommendations_json)) {
+            return false;
+        }
+
+        if ($this->recommendation_expires_at && $this->recommendation_expires_at->isPast()) {
+            return false;
+        }
+
+        return true;
+    }
 
     /**
      * Pelanggan yang mengajukan survei.

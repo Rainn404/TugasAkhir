@@ -6,6 +6,7 @@ use App\Services\InventoryAvailabilityService;
 use App\Services\OrderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class ReservationController extends Controller
 {
@@ -38,12 +39,18 @@ class ReservationController extends Controller
             return redirect()->route('cart.index')->with('error', $validation[1]);
         }
 
+        $checkoutKey = session()->get('checkout_key');
+        if (!is_string($checkoutKey) || !Str::isUuid($checkoutKey)) {
+            $checkoutKey = (string) Str::uuid();
+            session()->put('checkout_key', $checkoutKey);
+        }
+
         $total = 0;
         foreach ($cart as $item) {
             $total += $item['subtotal'];
         }
 
-        return view('cart.checkout', compact('cart', 'cartDate', 'total'));
+        return view('cart.checkout', compact('cart', 'cartDate', 'total', 'checkoutKey'));
     }
 
     /**
@@ -53,9 +60,15 @@ class ReservationController extends Controller
     {
         $cart = session()->get('cart', []);
         $cartDate = session()->get('cart_date');
+        $checkoutKey = session()->get('checkout_key');
 
         if (empty($cart) || !$cartDate) {
             return redirect()->route('cart.index')->with('error', 'Keranjang sewa Anda masih kosong.');
+        }
+
+        if (!is_string($checkoutKey) || !Str::isUuid($checkoutKey)) {
+            $checkoutKey = (string) Str::uuid();
+            session()->put('checkout_key', $checkoutKey);
         }
 
         $request->validate([
@@ -74,11 +87,12 @@ class ReservationController extends Controller
                 $cart,
                 $cartDate,
                 $request->only(['event_name', 'event_type', 'start_time', 'end_time', 'address', 'latitude', 'longitude', 'notes']),
-                Auth::id()
+                Auth::id(),
+                $checkoutKey
             );
 
             // Clear session cart after successful order creation
-            session()->forget(['cart', 'cart_date']);
+            session()->forget(['cart', 'cart_date', 'checkout_key']);
 
             return redirect()->route('dashboard.order', $order->order_number)
                 ->with('success', 'Pesanan berhasil dibuat! Silakan selesaikan pembayaran.');

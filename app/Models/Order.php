@@ -14,8 +14,12 @@ class Order extends Model
 
     protected $fillable = [
         'order_number',
+        'checkout_key',
         'user_id',
         'event_id',
+        'rental_amount',
+        'delivery_fee',
+        'survey_fee',
         'total_amount',
         'status',
         'payment_status',
@@ -23,6 +27,9 @@ class Order extends Model
     ];
 
     protected $casts = [
+        'rental_amount' => 'decimal:2',
+        'delivery_fee' => 'decimal:2',
+        'survey_fee' => 'decimal:2',
         'total_amount' => 'decimal:2',
     ];
 
@@ -44,5 +51,15 @@ class Order extends Model
     public function payment(): HasOne
     {
         return $this->hasOne(Payment::class);
+    }
+
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(OrderAssignment::class);
+    }
+
+    public function returnInspection(): HasOne
+    {
+        return $this->hasOne(OrderReturn::class);
     }
 }

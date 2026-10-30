@@ -41,4 +41,25 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Google Maps Platform Services
+    |--------------------------------------------------------------------------
+    |
+    | API Keys and default base location coordinates for Arsy Tenda.
+    | Browser key is dedicated for Maps JavaScript API (restricted by HTTP Referrer).
+    | Server key is used for backend Geocoding and Routes API requests.
+    |
+    */
+    'google_maps' => [
+        'client_key' => env('GOOGLE_MAPS_CLIENT_KEY', env('GOOGLE_MAPS_API_KEY')),
+        'server_key' => env('GOOGLE_MAPS_SERVER_KEY', env('GOOGLE_MAPS_API_KEY')),
+        'base_location' => [
+            'name' => env('ARSY_TENDA_LOCATION_NAME', 'Kantor Arsy Tenda Pelaihari'),
+            'address' => env('ARSY_TENDA_LOCATION_ADDRESS', 'Pelaihari, Kabupaten Tanah Laut, Kalimantan Selatan'),
+            'latitude' => (float) env('ARSY_TENDA_LATITUDE', -3.7955),
+            'longitude' => (float) env('ARSY_TENDA_LONGITUDE', 114.7712),
+        ],
+    ],
+
 ];

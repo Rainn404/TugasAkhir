@@ -1,291 +1,378 @@
 @extends('layouts.app')
 
 @section('content')
+<div class="home-page-container">
 
-{{-- HERO SECTION --}}
-<section class="py-5 my-2">
-    <div class="container">
-        <div class="row align-items-center g-5">
-            <div class="col-lg-7">
-                <span class="badge bg-black text-white px-3 py-2 rounded-pill small mb-3 tracking-wider text-uppercase">
-                    ✦ Layanan Persewaan Perlengkapan Acara Profesional
-                </span>
-                <h1 class="display-4 fw-black text-black tracking-tight mb-3">
-                    Solusi Perlengkapan Acara untuk Berbagai Kebutuhan
-                </h1>
-                <p class="lead text-secondary mb-4" style="font-size: 1.15rem;">
-                    Penyewaan tenda, panggung, meja, kursi, dan blower berkualitas tinggi. Sistem penjadwalan cerdas untuk memastikan ketersediaan inventaris tanpa bentrokan jadwal.
+    {{-- SECTION 1: HERO SECTION --}}
+    <section class="section-hero">
+        <div class="container hero-content-grid">
+            <div class="hero-text-col" data-reveal>
+                <div class="hero-kicker-label">ARSY TENDA &middot; EVENT RENTAL</div>
+                <h1 class="hero-main-title">Perlengkapan Acara<br>untuk <span class="hero-italic-serif">Momen Istimewa</span></h1>
+                <p class="hero-description-text">
+                    Sewa tenda, meja, kursi, panggung, dan perlengkapan acara lainnya dengan pilihan yang dapat disesuaikan dengan kebutuhan acaramu.
                 </p>
-                <div class="d-flex flex-wrap gap-3">
-                    <a href="#katalog" class="btn btn-dark btn-lg px-4 py-3 rounded-3 fw-semibold">
-                        <i class="bi bi-grid-fill me-2"></i> Pesan Sekarang
+                <div class="hero-cta-buttons">
+                    <a href="#katalog" class="btn-hero-primary">
+                        <span>Jelajahi Katalog</span>
+                        <i class="bi bi-arrow-right"></i>
                     </a>
-                    <a href="{{ route('survey.create') }}" class="btn btn-outline-dark btn-lg px-4 py-3 rounded-3 fw-semibold">
-                        <i class="bi bi-geo-alt-fill me-2"></i> Ajukan Survei Lokasi
+                    <a href="{{ route('survey.create') }}" class="btn-hero-secondary">
+                        <span>Ajukan Survei</span>
                     </a>
                 </div>
+                <div class="hero-trust-badges" aria-label="Keunggulan layanan">
+                    <div class="trust-badge-item">
+                        <i class="bi bi-geo-alt"></i>
+                        <span>Melayani area<br>Pelaihari dan sekitarnya</span>
+                    </div>
+                    <div class="trust-badge-item">
+                        <i class="bi bi-patch-check"></i>
+                        <span>Perlengkapan berkualitas<br>&amp; siap untuk berbagai acara</span>
+                    </div>
+                </div>
             </div>
-            <div class="col-lg-5">
-                <div class="card p-4 shadow-sm border bg-white rounded-4">
-                    <div class="d-flex align-items-center gap-3 mb-3 border-bottom pb-3">
-                        <div class="bg-black text-white p-3 rounded-3">
-                            <i class="bi bi-calendar-check fs-4"></i>
-                        </div>
-                        <div>
-                            <h6 class="fw-bold mb-0">Cek Ketersediaan Cepat</h6>
-                            <small class="text-secondary">Pilih tanggal untuk melihat stok inventaris</small>
+
+            <div class="hero-visual-col" data-reveal>
+                <div class="hero-visual-wrapper">
+                    <div class="hero-image-frame">
+                        <img
+                            src="{{ asset('assets/images/hero-tent.jpg') }}"
+                            alt="Tenda Pesta Arsy Tenda Pelaihari"
+                            class="hero-tent-photo"
+                            width="640"
+                            height="480"
+                            fetchpriority="high"
+                        >
+                    </div>
+                    <!-- Aesthetic Floating Overlay Box (Overlapping bottom edge like in reference image 2) -->
+                    <div class="hero-image-overlay-box">
+                        <span class="overlay-box-kicker">Layanan</span>
+                        <div class="overlay-box-title">Tenda &amp; perlengkapan acara</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {{-- SECTION 2: FLOATING DATE CHECK PANEL --}}
+    <section class="section-date-checker" data-reveal>
+        <div class="container">
+            <div class="date-checker-card">
+                <div class="date-checker-info">
+                    <h2 class="date-checker-title">Cari perlengkapan untuk acara kamu</h2>
+                    <p class="date-checker-subtitle">Pilih tanggal acara untuk melihat ketersediaan produk.</p>
+                </div>
+                <form action="{{ route('home') }}#katalog" method="GET" class="date-checker-form">
+                    @if(request('category'))
+                        <input type="hidden" name="category" value="{{ request('category') }}">
+                    @endif
+                    @if(request('search'))
+                        <input type="hidden" name="search" value="{{ request('search') }}">
+                    @endif
+                    <div class="date-field-group">
+                        <label for="event_date_input" class="date-field-label">Tanggal acara</label>
+                        <div class="date-input-wrapper">
+                            <i class="bi bi-calendar3 date-icon-decor"></i>
+                            <input
+                                id="event_date_input"
+                                type="date"
+                                name="event_date"
+                                value="{{ request('event_date', date('Y-m-d')) }}"
+                                min="{{ date('Y-m-d') }}"
+                                class="date-native-input"
+                                required
+                            >
                         </div>
                     </div>
-                    <form action="{{ route('home') }}" method="GET">
-                        <div class="mb-3">
-                            <label class="form-label small fw-semibold text-secondary">Tanggal Acara Anda</label>
-                            <input type="date" name="event_date" value="{{ request('event_date', date('Y-m-d')) }}" min="{{ date('Y-m-d') }}" class="form-control form-control-lg rounded-3 fs-6">
-                        </div>
-                        <button type="submit" class="btn btn-dark w-100 py-2.5 rounded-3 fw-semibold">
-                            Tampilkan Perlengkapan Tersedia
-                        </button>
+                    <button type="submit" class="btn-check-availability">
+                        <i class="bi bi-search"></i>
+                        <span>Cek Ketersediaan</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    {{-- SECTION 3: KOLEKSI PERLENGKAPAN (CATALOG) --}}
+    <section id="katalog" class="section-catalog-collection">
+        <div class="container">
+            <div class="catalog-header-split" data-reveal>
+                <div class="catalog-heading-left">
+                    <div class="section-kicker-label">KOLEKSI PERLENGKAPAN</div>
+                    <h2 class="catalog-section-title">Temukan kebutuhan acaramu.</h2>
+                    <p class="catalog-section-subtitle">
+                        Berbagai pilihan perlengkapan acara dengan kualitas terbaik untuk menciptakan momen yang berkesan.
+                    </p>
+                </div>
+                <div class="catalog-search-right">
+                    <form action="{{ route('home') }}#katalog" method="GET" class="catalog-search-bar" role="search">
+                        @if(request('category'))
+                            <input type="hidden" name="category" value="{{ request('category') }}">
+                        @endif
+                        @if(request('event_date'))
+                            <input type="hidden" name="event_date" value="{{ request('event_date') }}">
+                        @endif
+                        <i class="bi bi-search search-lens-icon"></i>
+                        <input
+                            type="search"
+                            name="search"
+                            value="{{ request('search') }}"
+                            placeholder="Cari perlengkapan..."
+                            class="catalog-search-input"
+                            aria-label="Cari perlengkapan acara"
+                        >
                     </form>
                 </div>
             </div>
-        </div>
-    </div>
-</section>
 
-{{-- KATALOG PERLENGKAPAN --}}
-<section id="katalog" class="py-5 border-top bg-white">
-    <div class="container">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-3">
-            <div>
-                <span class="text-uppercase text-secondary fw-bold small tracking-wider">Katalog Inventaris</span>
-                <h2 class="fw-bold text-black mb-1">Perlengkapan Acara</h2>
-                <p class="text-secondary small mb-0">Pilih dan sesuaikan konfigurasi perlengkapan sesuai kapasitas acara Anda.</p>
-            </div>
-            <!-- Search Input -->
-            <form action="{{ route('home') }}" method="GET" class="d-flex gap-2">
-                @if(request('category'))
-                    <input type="hidden" name="category" value="{{ request('category') }}">
-                @endif
-                <div class="input-group">
-                    <input type="text" name="search" value="{{ request('search') }}" class="form-control rounded-start-3" placeholder="Cari perlengkapan...">
-                    <button class="btn btn-outline-dark rounded-end-3" type="submit">
-                        <i class="bi bi-search"></i>
-                    </button>
+            <div class="catalog-filter-bar" data-reveal>
+                <div class="filter-pills-row">
+                    <a href="{{ route('home', request()->only(['search', 'event_date'])) }}#katalog"
+                       class="filter-pill-item {{ !request('category') ? 'active' : '' }}">
+                        Semua
+                    </a>
+                    @foreach($categories as $cat)
+                        <a href="{{ route('home', array_merge(request()->only(['search', 'event_date']), ['category' => $cat->slug])) }}#katalog"
+                           class="filter-pill-item {{ request('category') === $cat->slug ? 'active' : '' }}">
+                            {{ $cat->name }}
+                        </a>
+                    @endforeach
                 </div>
-            </form>
-        </div>
-
-        <!-- Filter Kategori Tabs -->
-        <div class="d-flex flex-wrap gap-2 mb-4">
-            <a href="{{ route('home') }}#katalog"
-               class="btn btn-sm {{ !request('category') ? 'btn-dark' : 'btn-light border' }} px-3 py-2 rounded-pill fw-semibold">
-                Semua Perlengkapan
-            </a>
-            @foreach($categories as $cat)
-                <a href="{{ route('home', ['category' => $cat->slug]) }}#katalog"
-                   class="btn btn-sm {{ request('category') === $cat->slug ? 'btn-dark' : 'btn-light border' }} px-3 py-2 rounded-pill fw-semibold">
-                    {{ $cat->name }}
-                </a>
-            @endforeach
-        </div>
-
-        <!-- Inventory Grid -->
-        @if($inventories->isEmpty())
-            <div class="text-center py-5 my-4 border rounded-4 bg-light">
-                <i class="bi bi-box-seam text-secondary fs-1 mb-2 d-block"></i>
-                <h5 class="fw-bold text-black">Perlengkapan Tidak Ditemukan</h5>
-                <p class="text-secondary small">Coba ubah kata kunci pencarian atau filter kategori lainnya.</p>
-                <a href="{{ route('home') }}#katalog" class="btn btn-dark btn-sm rounded-3 mt-2">Reset Filter</a>
+                <div class="catalog-product-count">
+                    <span>{{ $inventories->count() }} Produk</span>
+                </div>
             </div>
-        @else
-            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-4">
-                @foreach($inventories as $item)
-                    <div class="col">
-                        <div class="card h-100 rounded-3 overflow-hidden border">
-                            <!-- Image / Thumbnail -->
-                            <div class="position-relative bg-light border-bottom d-flex align-items-center justify-content-center" style="height: 200px;">
-                                @if($item->image)
-                                    <img src="{{ asset('storage/' . $item->image) }}" alt="{{ $item->name }}" class="w-100 h-100 object-fit-cover">
-                                @else
-                                    <div class="text-center p-3">
-                                        @switch($item->category->slug)
-                                            @case('tenda')
-                                                <i class="bi bi-triangle fs-1 text-secondary opacity-50"></i>
-                                                <div class="small fw-semibold text-secondary mt-1">Tenda Event</div>
-                                                @break
-                                            @case('meja')
-                                                <i class="bi bi-square fs-1 text-secondary opacity-50"></i>
-                                                <div class="small fw-semibold text-secondary mt-1">Meja Acara</div>
-                                                @break
-                                            @case('kursi')
-                                                <i class="bi bi-layers fs-1 text-secondary opacity-50"></i>
-                                                <div class="small fw-semibold text-secondary mt-1">Kursi Tamu</div>
-                                                @break
-                                            @case('panggung')
-                                                <i class="bi bi-display fs-1 text-secondary opacity-50"></i>
-                                                <div class="small fw-semibold text-secondary mt-1">Panggung Rigging</div>
-                                                @break
-                                            @case('blower')
-                                                <i class="bi bi-wind fs-1 text-secondary opacity-50"></i>
-                                                <div class="small fw-semibold text-secondary mt-1">Misty Fan</div>
-                                                @break
-                                            @default
-                                                <i class="bi bi-box fs-1 text-secondary opacity-50"></i>
-                                        @endswitch
-                                    </div>
-                                @endif
-                                <span class="position-absolute top-0 start-0 m-3 badge bg-white text-black border shadow-sm small fw-semibold">
-                                    {{ $item->category->name }}
-                                </span>
-                            </div>
 
-                            <!-- Card Body -->
-                            <div class="card-body d-flex flex-column p-3">
-                                <h5 class="card-title fw-bold text-black fs-6 mb-1">{{ $item->name }}</h5>
-                                <p class="card-text text-secondary small mb-3 flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
-                                    {{ $item->description }}
+            @if($inventories->isEmpty())
+                <div class="catalog-empty-notice" data-reveal>
+                    <i class="bi bi-box-seam fs-1 text-secondary opacity-50 mb-3"></i>
+                    <h3>Perlengkapan tidak ditemukan</h3>
+                    <p>Coba gunakan kata kunci lain atau pilih kategori yang berbeda.</p>
+                    <a href="{{ route('home') }}#katalog" class="btn-empty-reset">Tampilkan Semua Produk</a>
+                </div>
+            @else
+                <div class="catalog-four-column-grid">
+                    @foreach($inventories as $item)
+                        <article class="product-catalog-card" data-reveal>
+                            <div class="card-thumbnail-holder">
+                                <x-product-image :inventory="$item" />
+                                <span class="card-category-badge">{{ $item->category->name }}</span>
+                            </div>
+                            <div class="card-content-holder">
+                                <h3 class="card-item-title">{{ $item->name }}</h3>
+                                <p class="card-item-description">
+                                    {{ Str::limit($item->description, 60) }}
                                 </p>
-                                
-                                <div class="border-top pt-2 mt-auto">
-                                    <div class="d-flex justify-content-between align-items-baseline mb-2">
-                                        <small class="text-secondary">Mulai dari</small>
-                                        <span class="fw-bold text-black fs-6">
-                                            Rp {{ number_format($item->price, 0, ',', '.') }} <small class="text-secondary fw-normal">/ {{ $item->unit }}</small>
-                                        </span>
+                                <div class="card-action-footer">
+                                    <div class="card-price-display">
+                                        Rp {{ number_format($item->price, 0, ',', '.') }}
+                                        <span class="price-unit-text">/ {{ $item->unit }}</span>
                                     </div>
-                                    <a href="{{ route('catalog.show', $item->slug) }}" class="btn btn-outline-dark w-100 btn-sm rounded-2 fw-semibold">
-                                        Lihat Detail & Konfigurasi
+                                    <a href="{{ route('catalog.show', ['slug' => $item->slug, 'event_date' => request('event_date')]) }}"
+                                       class="btn-card-view-detail"
+                                       aria-label="Lihat detail {{ $item->name }}">
+                                        <span>Lihat Detail</span>
+                                        <i class="bi bi-arrow-right"></i>
                                     </a>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        @endif
-    </div>
-</section>
-
-{{-- CARA PEMESANAN (STEPPER ALUR) --}}
-<section id="cara-pemesanan" class="py-5 bg-light border-top">
-    <div class="container py-3">
-        <div class="text-center max-w-2xl mx-auto mb-5">
-            <span class="text-uppercase text-secondary fw-bold small tracking-wider">Alur Penyewaan</span>
-            <h2 class="fw-bold text-black mb-2">Cara Pemesanan Perlengkapan</h2>
-            <p class="text-secondary small">Proses penyewaan terstruktur untuk menjamin perlengkapan Anda siap dan tepat waktu.</p>
+                        </article>
+                    @endforeach
+                </div>
+            @endif
         </div>
+    </section>
 
-        <div class="row g-4">
-            <div class="col-md-4 col-sm-6">
-                <div class="card h-100 p-4 border bg-white rounded-3">
-                    <div class="badge bg-black text-white rounded-circle p-3 d-inline-flex align-items-center justify-content-center mb-3" style="width: 48px; height: 48px;">
-                        01
-                    </div>
-                    <h6 class="fw-bold text-black mb-2">Tentukan Acara & Jadwal</h6>
-                    <p class="text-secondary small mb-0">Tentukan nama kegiatan, tanggal pelaksanaan, serta durasi sewa yang Anda butuhkan.</p>
-                </div>
-            </div>
-            <div class="col-md-4 col-sm-6">
-                <div class="card h-100 p-4 border bg-white rounded-3">
-                    <div class="badge bg-black text-white rounded-circle p-3 d-inline-flex align-items-center justify-content-center mb-3" style="width: 48px; height: 48px;">
-                        02
-                    </div>
-                    <h6 class="fw-bold text-black mb-2">Pilih & Konfigurasi</h6>
-                    <p class="text-secondary small mb-0">Pilih tenda, kursi, meja, panggung, dan sesuaikan ukuran serta jenis penutup sesuai kebutuhan.</p>
-                </div>
-            </div>
-            <div class="col-md-4 col-sm-6">
-                <div class="card h-100 p-4 border bg-white rounded-3">
-                    <div class="badge bg-black text-white rounded-circle p-3 d-inline-flex align-items-center justify-content-center mb-3" style="width: 48px; height: 48px;">
-                        03
-                    </div>
-                    <h6 class="fw-bold text-black mb-2">Cek Ketersediaan Sistem</h6>
-                    <p class="text-secondary small mb-0">Sistem otomatis menghitung ketersediaan stok inventaris pada jadwal yang Anda pilih tanpa bentrok.</p>
-                </div>
-            </div>
-            <div class="col-md-4 col-sm-6">
-                <div class="card h-100 p-4 border bg-white rounded-3">
-                    <div class="badge bg-black text-white rounded-circle p-3 d-inline-flex align-items-center justify-content-center mb-3" style="width: 48px; height: 48px;">
-                        04
-                    </div>
-                    <h6 class="fw-bold text-black mb-2">Tentukan Titik Lokasi</h6>
-                    <p class="text-secondary small mb-0">Tandai lokasi acara menggunakan peta interaktif Google Maps / OpenStreetMap untuk pengiriman.</p>
-                </div>
-            </div>
-            <div class="col-md-4 col-sm-6">
-                <div class="card h-100 p-4 border bg-white rounded-3">
-                    <div class="badge bg-black text-white rounded-circle p-3 d-inline-flex align-items-center justify-content-center mb-3" style="width: 48px; height: 48px;">
-                        05
-                    </div>
-                    <h6 class="fw-bold text-black mb-2">Pembayaran Online Aman</h6>
-                    <p class="text-secondary small mb-0">Lakukan pembayaran melalui Payment Gateway terintegrasi (QRIS, Transfer Bank, E-Wallet).</p>
-                </div>
-            </div>
-            <div class="col-md-4 col-sm-6">
-                <div class="card h-100 p-4 border bg-white rounded-3">
-                    <div class="badge bg-black text-white rounded-circle p-3 d-inline-flex align-items-center justify-content-center mb-3" style="width: 48px; height: 48px;">
-                        06
-                    </div>
-                    <h6 class="fw-bold text-black mb-2">Pemasangan & Pelaksanaan</h6>
-                    <p class="text-secondary small mb-0">Tim profesional Arsy Tenda akan memasang perlengkapan tepat waktu di lokasi acara Anda.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-{{-- TENTANG KAMI & CTA SURVEI --}}
-<section id="tentang-kami" class="py-5 bg-white border-top">
-    <div class="container py-3">
-        <div class="row align-items-center g-5">
-            <div class="col-lg-6">
-                <span class="text-uppercase text-secondary fw-bold small tracking-wider">Tentang Arsy Tenda</span>
-                <h2 class="fw-bold text-black mb-3">Mitra Terpercaya Perlengkapan Event Anda</h2>
-                <p class="text-secondary mb-3">
-                    Arsy Tenda adalah penyedia jasa sewa perlengkapan pesta dan event profesional yang melayani berbagai jenis acara, mulai dari pernikahan, pameran, konser, bazar, peresmian gedung, hingga acara instansi kedinasan.
+    {{-- SECTION 4: URUTAN PEMESANAN (HOW IT WORKS) --}}
+    <section id="cara-pemesanan" class="section-booking-process">
+        <div class="container">
+            <div class="process-section-header" data-reveal>
+                <div class="section-kicker-label">CARA PEMESANAN</div>
+                <h2 class="process-main-title">Urutan pemesanan yang jelas</h2>
+                <p class="process-subtitle">
+                    Proses pemesanan mudah dan transparan, dari pilih perlengkapan hingga acara siap dilaksanakan.
                 </p>
-                <div class="row g-3 mt-1">
-                    <div class="col-sm-6">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check2-circle fs-4 text-black"></i>
-                            <span class="small fw-semibold">Peralatan Bersih & Terawat</span>
+            </div>
+
+            <div class="process-steps-row">
+                <div class="process-step-box" data-reveal>
+                    <div class="step-header-meta">
+                        <span class="step-num-badge">01</span>
+                        <div class="step-icon-wrap"><i class="bi bi-calendar3"></i></div>
+                    </div>
+                    <h3 class="step-box-title">Pilih tanggal &amp; perlengkapan</h3>
+                    <p class="step-box-desc">Tentukan tanggal acara dan produk yang dibutuhkan.</p>
+                </div>
+
+                <div class="process-step-box" data-reveal>
+                    <div class="step-header-meta">
+                        <span class="step-num-badge">02</span>
+                        <div class="step-icon-wrap"><i class="bi bi-card-checklist"></i></div>
+                    </div>
+                    <h3 class="step-box-title">Atur kebutuhan acara</h3>
+                    <p class="step-box-desc">Sesuaikan jumlah, ukuran, dan detail acara.</p>
+                </div>
+
+                <div class="process-step-box" data-reveal>
+                    <div class="step-header-meta">
+                        <span class="step-num-badge">03</span>
+                        <div class="step-icon-wrap"><i class="bi bi-geo-alt"></i></div>
+                    </div>
+                    <h3 class="step-box-title">Lengkapi detail lokasi</h3>
+                    <p class="step-box-desc">Informasikan lokasi acara dan waktu pemasangan.</p>
+                </div>
+
+                <div class="process-step-box" data-reveal>
+                    <div class="step-header-meta">
+                        <span class="step-num-badge">04</span>
+                        <div class="step-icon-wrap"><i class="bi bi-check2-circle"></i></div>
+                    </div>
+                    <h3 class="step-box-title">Konfirmasi pesanan</h3>
+                    <p class="step-box-desc">Tim kami akan menghubungi untuk konfirmasi dan jadwal.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {{-- SECTION 5: PORTOFOLIO ACARA (GALLERY) --}}
+    <section id="portofolio" class="section-portfolio-gallery">
+        <div class="container portfolio-grid-split">
+            <div class="portfolio-text-side" data-reveal>
+                <div class="section-kicker-label">PORTOFOLIO</div>
+                <h2 class="portfolio-main-title">
+                    Rencana acara dimulai dari detail yang tepat.
+                </h2>
+                <p class="portfolio-description">
+                    Lihat beberapa hasil pemasangan perlengkapan acara yang pernah kami kerjakan untuk berbagai jenis acara.
+                </p>
+                <a href="#katalog" class="btn-portfolio-action">
+                    <span>Lihat Semua Portofolio</span>
+                    <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+
+            <div class="portfolio-collage-side" data-reveal>
+                <div class="collage-container">
+                    <div class="collage-item collage-item--main">
+                        <img src="{{ asset('assets/images/references/marquee.jpg') }}"
+                             alt="Pemasangan Tenda Resepsi Elegan Arsy Tenda"
+                             width="600"
+                             height="450"
+                             loading="lazy">
+                    </div>
+                    <div class="collage-item collage-item--stage">
+                        <img src="{{ asset('assets/images/references/event-stage.jpg') }}"
+                             alt="Instalasi Panggung Rigging Acara"
+                             width="400"
+                             height="300"
+                             loading="lazy">
+                    </div>
+                    <div class="collage-item collage-item--dining">
+                        <img src="{{ asset('assets/images/references/table-setup.jpg') }}"
+                             alt="Penataan Meja Kursi Jamuan Tamu"
+                             width="400"
+                             height="300"
+                             loading="lazy">
+                    </div>
+                    <div class="collage-item collage-item--wide">
+                        <img src="{{ asset('assets/images/hero-tent.jpg') }}"
+                             alt="Suasana Tenda Roder Acara Besar"
+                             width="800"
+                             height="400"
+                             loading="lazy">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {{-- SECTION 6: TENTANG KAMI --}}
+    <section id="tentang-kami" class="py-5" data-reveal style="background-color: #FAF8F5; border-top: 1px solid #E7E2DA; border-bottom: 1px solid #E7E2DA;">
+        <div class="container py-lg-3">
+            <div class="row g-4 g-lg-5 align-items-center">
+                <div class="col-lg-6">
+                    <div class="section-kicker-label mb-2">TENTANG ARSY TENDA</div>
+                    <h2 class="font-display fw-bold mb-3" style="font-size: clamp(1.75rem, 3vw, 2.35rem); line-height: 1.2; color: #191919;">
+                        Penyedia Persewaan Tenda &amp; Perlengkapan Acara Terpercaya
+                    </h2>
+                    <p class="text-secondary mb-3" style="font-size: 0.95rem; line-height: 1.7;">
+                        Arsy Tenda berpusat di Pelaihari, Kabupaten Tanah Laut, Kalimantan Selatan. Kami menyediakan solusi lengkap persewaan tenda berkualitas, panggung, meja, dan kursi untuk mewujudkan berbagai agenda acara—dari resepsi pernikahan, syukuran keluarga, pameran UMKM, hingga acara kedinasan dan formal.
+                    </p>
+                    <p class="text-secondary mb-4" style="font-size: 0.95rem; line-height: 1.7;">
+                        Dengan dukungan tim teknisi lapangan berpengalaman, armada logistik siap jalan, dan layanan survei lokasi presisi via peta interaktif, kami memastikan perlengkapan terpasang kokoh, bersih, dan tepat waktu demi kelancaran hari istimewa Anda.
+                    </p>
+                    <div class="d-flex flex-wrap gap-4 pt-3 border-top" style="border-color: #DDD8D0 !important;">
+                        <div>
+                            <span class="d-block fw-bold text-black fs-5 tabular-nums">100%</span>
+                            <small class="text-secondary" style="font-size: 0.8rem;">Peralatan Bersih &amp; Terawat</small>
+                        </div>
+                        <div>
+                            <span class="d-block fw-bold text-black fs-5">Pelaihari &amp; Sekitarnya</span>
+                            <small class="text-secondary" style="font-size: 0.8rem;">Jangkauan Layanan</small>
+                        </div>
+                        <div>
+                            <span class="d-block fw-bold text-black fs-5">Tepat Waktu</span>
+                            <small class="text-secondary" style="font-size: 0.8rem;">Pemasangan Profesional</small>
                         </div>
                     </div>
-                    <div class="col-sm-6">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check2-circle fs-4 text-black"></i>
-                            <span class="small fw-semibold">Pemasangan Tepat Waktu</span>
+                </div>
+                <div class="col-lg-6">
+                    <div class="editorial-card p-4 p-md-5" style="background: #FFFFFF;">
+                        <h4 class="font-display fw-bold text-black mb-3 fs-5">Komitmen Pelayanan Kami</h4>
+                        <div class="d-flex gap-3 mb-4">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center bg-light border flex-shrink-0" style="width: 44px; height: 44px; border-color: #DDD8D0 !important;">
+                                <i class="bi bi-shield-check text-black fs-5"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-black mb-1">Stok &amp; Kualitas Terjamin</h6>
+                                <p class="text-secondary small mb-0">Seluruh unit tenda dan perlengkapan dipelihara berkala agar selalu siap pakai dan higienis.</p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-sm-6">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check2-circle fs-4 text-black"></i>
-                            <span class="small fw-semibold">Bebas Bentrokan Jadwal</span>
+                        <div class="d-flex gap-3 mb-4">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center bg-light border flex-shrink-0" style="width: 44px; height: 44px; border-color: #DDD8D0 !important;">
+                                <i class="bi bi-geo-alt-fill text-black fs-5"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-black mb-1">Survei Lokasi &amp; Rute Terukur</h6>
+                                <p class="text-secondary small mb-0">Peninjauan langsung ke lokasi acara untuk memastikan akses armada dan penataan layout akurat.</p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-sm-6">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-check2-circle fs-4 text-black"></i>
-                            <span class="small fw-semibold">Layanan Survei Lapangan</span>
+                        <div class="d-flex gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center bg-light border flex-shrink-0" style="width: 44px; height: 44px; border-color: #DDD8D0 !important;">
+                                <i class="bi bi-clock-history text-black fs-5"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-black mb-1">Pemesanan Terbuka &amp; Pasti</h6>
+                                <p class="text-secondary small mb-0">Ketersediaan dicek per tanggal acara dengan transparansi rincian biaya tanpa biaya tersembunyi.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-6">
-                <div class="card p-4 p-md-5 bg-black text-white rounded-4 border-0 shadow">
-                    <span class="badge bg-white text-black px-3 py-2 rounded-pill small mb-3 tracking-wider d-inline-block" style="width: fit-content;">
-                        SURVEI LOKASI
-                    </span>
-                    <h3 class="fw-bold text-white mb-2">Ragu Menentukan Ukuran Tenda?</h3>
-                    <p class="text-secondary small mb-4">
-                        Ajukan survei lokasi dan tim teknis kami akan datang ke lokasi Anda untuk melakukan pengukuran lahan dan merekomendasikan perlengkapan yang paling sesuai.
+        </div>
+    </section>
+
+    {{-- SECTION 7: BANNER SURVEI LOKASI --}}
+    <section id="ajukan-survei" class="section-survey-banner" data-reveal>
+        <div class="container">
+            <div class="survey-banner-box">
+                <div class="survey-banner-text">
+                    <div class="banner-kicker-label">BUTUH BANTUAN?</div>
+                    <h2 class="banner-main-title">Perlu meninjau lokasi acara?</h2>
+                    <p class="banner-subtitle">
+                        Ajukan permintaan survei untuk membantu menentukan kebutuhan perlengkapan dan penataan acara.
                     </p>
-                    <a href="{{ route('survey.create') }}" class="btn btn-light btn-lg px-4 py-3 rounded-3 fw-bold text-black">
-                        <i class="bi bi-geo-alt-fill me-2"></i> Ajukan Survei Lokasi Sekarang
+                </div>
+                <div class="survey-banner-cta">
+                    <a href="{{ route('survey.create') }}" class="btn-survey-action-white">
+                        <span>Ajukan Survei Lokasi</span>
+                        <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
+</div>
 @endsection

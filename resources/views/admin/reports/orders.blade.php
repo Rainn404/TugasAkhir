@@ -1,30 +1,33 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3 page-editorial-header">
     <div>
-        <h4 class="fw-bold text-black mb-1">Laporan Pesanan & Penjualan</h4>
-        <p class="text-secondary small mb-0">Rekapitulasi transaksi pemesanan perlengkapan acara.</p>
+        <span class="page-eyebrow">Rekapitulasi Finansial</span>
+        <h1 class="page-headline mb-1 font-display">Laporan Pesanan &amp; Penjualan</h1>
+        <p class="page-subtext">Rekapitulasi transaksi pemesanan perlengkapan acara dan total omset masuk.</p>
     </div>
-    <button onclick="window.print()" class="btn btn-outline-dark btn-sm rounded-2 d-print-none">
-        <i class="bi bi-printer me-1"></i> Cetak Laporan
-    </button>
+    <div>
+        <button onclick="window.print()" class="btn btn-outline-dark btn-sm rounded-pill px-3 py-1.5 d-print-none fw-semibold">
+            <i class="bi bi-printer me-1"></i> Cetak Laporan
+        </button>
+    </div>
 </div>
 
 <!-- Filter Periode & Status (Hidden on Print) -->
-<div class="card p-3 border rounded-3 bg-white mb-4 shadow-sm d-print-none">
+<div class="editorial-card p-3 p-md-4 mb-4 d-print-none">
     <form action="{{ route('admin.reports.orders') }}" method="GET" class="row g-2 align-items-center">
         <div class="col-md-3">
             <label class="form-label small fw-semibold text-secondary mb-1">Dari Tanggal</label>
-            <input type="date" name="start_date" value="{{ request('start_date') }}" class="form-control form-control-sm rounded-2">
+            <input type="date" name="start_date" value="{{ request('start_date') }}" class="form-control rounded-3">
         </div>
         <div class="col-md-3">
             <label class="form-label small fw-semibold text-secondary mb-1">Sampai Tanggal</label>
-            <input type="date" name="end_date" value="{{ request('end_date') }}" class="form-control form-control-sm rounded-2">
+            <input type="date" name="end_date" value="{{ request('end_date') }}" class="form-control rounded-3">
         </div>
         <div class="col-md-3">
             <label class="form-label small fw-semibold text-secondary mb-1">Status Pesanan</label>
-            <select name="status" class="form-select form-select-sm rounded-2">
+            <select name="status" class="form-select rounded-3">
                 <option value="">-- Semua Status --</option>
                 <option value="paid" {{ request('status') === 'paid' ? 'selected' : '' }}>Paid (Dibayar)</option>
                 <option value="confirmed" {{ request('status') === 'confirmed' ? 'selected' : '' }}>Dikonfirmasi</option>
@@ -34,8 +37,8 @@
             </select>
         </div>
         <div class="col-md-3 d-flex gap-2 align-items-end" style="height: 100%;">
-            <button type="submit" class="btn btn-dark btn-sm rounded-2 w-100 mt-auto py-1.5">Filter Data</button>
-            <a href="{{ route('admin.reports.orders') }}" class="btn btn-outline-secondary btn-sm rounded-2 mt-auto py-1.5">Reset</a>
+            <button type="submit" class="btn btn-dark rounded-pill px-4 py-2 w-100 fw-semibold mt-auto">Filter Data</button>
+            <a href="{{ route('admin.reports.orders') }}" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-semibold mt-auto">Reset</a>
         </div>
     </form>
 </div>
@@ -49,44 +52,57 @@
 </div>
 
 <!-- Summary Card -->
-<div class="card p-3 border rounded-3 bg-white mb-4 shadow-sm">
+<div class="editorial-card p-4 mb-4">
     <div class="d-flex justify-content-between align-items-center">
         <div>
-            <span class="text-secondary small d-block">Total Pendapatan Valid:</span>
-            <h4 class="fw-bold text-black mb-0">Rp {{ number_format($totalRevenue, 0, ',', '.') }}</h4>
+            <span class="stat-kicker">Total Pendapatan Valid:</span>
+            <h3 class="stat-number mb-0">Rp {{ number_format($totalRevenue, 0, ',', '.') }}</h3>
         </div>
         <div>
-            <span class="badge bg-dark small">{{ count($orders) }} Transaksi Terdata</span>
+            <span class="badge-status badge-status--neutral">{{ count($orders) }} Transaksi Terdata</span>
         </div>
     </div>
 </div>
 
 <!-- Report Table -->
-<div class="card border rounded-4 bg-white overflow-hidden shadow-sm">
+<div class="editorial-card overflow-hidden">
     <div class="table-responsive">
-        <table class="table align-middle mb-0 small">
-            <thead class="table-light">
+        <table class="editorial-table align-middle">
+            <thead>
                 <tr>
-                    <th class="py-3 px-4">No. Pesanan</th>
-                    <th class="py-3 px-3">Tanggal Pesan</th>
-                    <th class="py-3 px-3">Pelanggan</th>
-                    <th class="py-3 px-3">Nama Acara</th>
-                    <th class="py-3 px-3">Tanggal Acara</th>
-                    <th class="py-3 px-3 text-end">Total Biaya</th>
-                    <th class="py-3 px-4 text-center">Status</th>
+                    <th>No. Pesanan</th>
+                    <th>Tanggal Pesan</th>
+                    <th>Pelanggan</th>
+                    <th>Nama Acara</th>
+                    <th>Tanggal Acara</th>
+                    <th class="text-end">Total Biaya</th>
+                    <th class="text-center">Status</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($orders as $order)
                     <tr>
-                        <td class="py-3 px-4 font-monospace fw-bold">{{ $order->order_number }}</td>
-                        <td class="py-3 px-3 text-secondary">{{ $order->created_at->format('d/m/Y') }}</td>
-                        <td class="py-3 px-3 fw-semibold">{{ $order->user->name ?? '-' }}</td>
-                        <td class="py-3 px-3">{{ $order->event->event_name ?? '-' }}</td>
-                        <td class="py-3 px-3">{{ $order->event ? \Carbon\Carbon::parse($order->event->event_date)->format('d/m/Y') : '-' }}</td>
-                        <td class="py-3 px-3 text-end fw-bold">Rp {{ number_format($order->total_amount, 0, ',', '.') }}</td>
-                        <td class="py-3 px-4 text-center">
-                            <span class="badge bg-light text-dark border">{{ strtoupper($order->status) }}</span>
+                        <td class="font-monospace fw-bold small text-black">{{ $order->order_number }}</td>
+                        <td class="text-secondary small">{{ $order->created_at->format('d/m/Y') }}</td>
+                        <td class="fw-semibold small text-black">{{ $order->user->name ?? '-' }}</td>
+                        <td class="small">{{ $order->event->event_name ?? '-' }}</td>
+                        <td class="small text-secondary">{{ $order->event ? \Carbon\Carbon::parse($order->event->event_date)->format('d/m/Y') : '-' }}</td>
+                        <td class="text-end fw-bold text-black small">Rp {{ number_format($order->total_amount, 0, ',', '.') }}</td>
+                        <td class="text-center">
+                            @php
+                                $bStyles = [
+                                    'pending_payment' => 'badge-status--warning',
+                                    'paid' => 'badge-status--success',
+                                    'confirmed' => 'badge-status--success',
+                                    'preparing' => 'badge-status--info',
+                                    'ongoing' => 'badge-status--neutral',
+                                    'completed' => 'badge-status--success',
+                                    'cancelled' => 'badge-status--danger',
+                                ];
+                            @endphp
+                            <span class="badge-status {{ $bStyles[$order->status] ?? 'badge-status--neutral' }}" style="font-size: 0.7rem;">
+                                {{ strtoupper($order->status) }}
+                            </span>
                         </td>
                     </tr>
                 @empty

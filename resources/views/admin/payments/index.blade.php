@@ -1,51 +1,50 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h4 class="fw-bold text-black mb-1">Manajemen Transaksi Pembayaran</h4>
-        <p class="text-secondary small mb-0">Pantau seluruh catatan transaksi dan integrasi Payment Gateway Midtrans.</p>
-    </div>
+<div class="page-editorial-header mb-4">
+    <span class="page-eyebrow">Integrasi Gateway</span>
+    <h1 class="page-headline mb-1 font-display">Manajemen Transaksi Pembayaran</h1>
+    <p class="page-subtext">Pantau seluruh mutasi pembayaran digital melalui Payment Gateway Midtrans.</p>
 </div>
 
 <!-- Filter Status -->
-<div class="card p-3 border rounded-3 bg-white mb-4 shadow-sm">
+<div class="editorial-card p-3 p-md-4 mb-4">
     <form action="{{ route('admin.payments') }}" method="GET" class="row g-2 align-items-center">
         <div class="col-md-8">
-            <select name="payment_status" class="form-select form-select-sm rounded-2">
+            <select name="payment_status" class="form-select rounded-3">
                 <option value="">-- Semua Status Pembayaran --</option>
-                <option value="pending" {{ request('payment_status') === 'pending' ? 'selected' : '' }}>Pending</option>
+                <option value="pending" {{ request('payment_status') === 'pending' ? 'selected' : '' }}>Pending (Menunggu)</option>
                 <option value="paid" {{ request('payment_status') === 'paid' ? 'selected' : '' }}>Paid (Lunas)</option>
                 <option value="failed" {{ request('payment_status') === 'failed' ? 'selected' : '' }}>Failed (Gagal)</option>
-                <option value="expired" {{ request('payment_status') === 'expired' ? 'selected' : '' }}>Expired (Kadaluarsa)</option>
+                <option value="expired" {{ request('payment_status') === 'expired' ? 'selected' : '' }}>Expired (Kedaluwarsa)</option>
             </select>
         </div>
         <div class="col-md-4 d-flex gap-2">
-            <button type="submit" class="btn btn-dark btn-sm rounded-2 w-100">Filter Data</button>
-            <a href="{{ route('admin.payments') }}" class="btn btn-outline-secondary btn-sm rounded-2">Reset</a>
+            <button type="submit" class="btn btn-dark rounded-pill px-4 py-2 w-100 fw-semibold">Filter Data</button>
+            <a href="{{ route('admin.payments') }}" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-semibold">Reset</a>
         </div>
     </form>
 </div>
 
 <!-- Payments Table -->
-<div class="card border rounded-4 bg-white overflow-hidden shadow-sm">
+<div class="editorial-card overflow-hidden">
     <div class="table-responsive">
-        <table class="table align-middle mb-0">
-            <thead class="table-light">
+        <table class="editorial-table align-middle">
+            <thead>
                 <tr>
-                    <th class="py-3 px-4">No. Pesanan</th>
-                    <th class="py-3 px-3">Pelanggan</th>
-                    <th class="py-3 px-3">Acara</th>
-                    <th class="py-3 px-3">Metode Bayar</th>
-                    <th class="py-3 px-3 text-end">Jumlah Tagihan</th>
-                    <th class="py-3 px-3 text-center">Status</th>
-                    <th class="py-3 px-4">Waktu Pembayaran</th>
+                    <th>No. Pesanan</th>
+                    <th>Pelanggan</th>
+                    <th>Acara</th>
+                    <th>Metode Bayar</th>
+                    <th class="text-end">Jumlah Tagihan</th>
+                    <th class="text-center">Status</th>
+                    <th>Waktu Pembayaran</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($payments as $pmt)
                     <tr>
-                        <td class="py-3 px-4">
+                        <td>
                             @if($pmt->order)
                                 <a href="{{ route('admin.orders.show', $pmt->order->id) }}" class="fw-bold text-black font-monospace small text-decoration-none">
                                     {{ $pmt->order->order_number }}
@@ -54,32 +53,32 @@
                                 <span class="text-secondary small font-monospace">Order #{{ $pmt->order_id }}</span>
                             @endif
                         </td>
-                        <td class="py-3 px-3 small">
+                        <td class="small">
                             {{ $pmt->order->user->name ?? '-' }}
                         </td>
-                        <td class="py-3 px-3 small">
+                        <td class="small">
                             {{ $pmt->order->event->event_name ?? '-' }}
                         </td>
-                        <td class="py-3 px-3 small font-monospace">
+                        <td class="small font-monospace">
                             {{ strtoupper($pmt->payment_type ?? 'Midtrans Gateway') }}
                         </td>
-                        <td class="py-3 px-3 text-end fw-bold text-black small">
+                        <td class="text-end fw-bold text-black small">
                             Rp {{ number_format($pmt->gross_amount, 0, ',', '.') }}
                         </td>
-                        <td class="py-3 px-3 text-center">
+                        <td class="text-center">
                             @php
                                 $pBadge = [
-                                    'pending' => 'bg-warning text-dark',
-                                    'paid' => 'bg-success text-white',
-                                    'failed' => 'bg-danger text-white',
-                                    'expired' => 'bg-secondary text-white',
+                                    'pending' => 'badge-status--warning',
+                                    'paid' => 'badge-status--success',
+                                    'failed' => 'badge-status--danger',
+                                    'expired' => 'badge-status--neutral',
                                 ];
                             @endphp
-                            <span class="badge {{ $pBadge[$pmt->payment_status] ?? 'bg-light text-dark' }} small">
+                            <span class="badge-status {{ $pBadge[$pmt->payment_status] ?? 'badge-status--neutral' }}" style="font-size: 0.72rem;">
                                 {{ strtoupper($pmt->payment_status) }}
                             </span>
                         </td>
-                        <td class="py-3 px-4 small text-secondary">
+                        <td class="small text-secondary">
                             {{ $pmt->paid_at ? \Carbon\Carbon::parse($pmt->paid_at)->format('d/m/Y H:i') : '-' }}
                         </td>
                     </tr>
@@ -96,7 +95,7 @@
     </div>
 
     @if($payments->hasPages())
-        <div class="p-3 border-top">
+        <div class="p-3 border-top" style="border-color: #E7E2DA !important;">
             {{ $payments->links() }}
         </div>
     @endif

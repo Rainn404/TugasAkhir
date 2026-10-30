@@ -6,6 +6,7 @@ use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\SurveyController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GoogleMapsController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Admin\AdminController;
@@ -34,11 +35,23 @@ Route::middleware('guest')->group(function () {
 // Midtrans Payment Webhook Callback (CSRF exempted in bootstrap/app.php)
 Route::post('/payment/webhook', [PaymentController::class, 'handleNotification'])->name('payment.webhook');
 
+// Google Maps Platform Integration (Geocoding, Reverse Geocoding & Routes)
+Route::prefix('maps')->name('maps.')->middleware('throttle:60,1')->group(function () {
+    Route::get('/config', [GoogleMapsController::class, 'config'])->name('config');
+    Route::post('/geocode', [GoogleMapsController::class, 'geocode'])->name('geocode');
+    Route::post('/reverse-geocode', [GoogleMapsController::class, 'reverseGeocode'])->name('reverse-geocode');
+    Route::post('/calculate-route', [GoogleMapsController::class, 'calculateRoute'])->name('calculate-route');
+});
+
 // Authenticated Routes
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
     Route::post('/dashboard/order/{order_number}/payment-token', [PaymentController::class, 'retrySnapToken'])
         ->name('payments.retry');
+    Route::post('/dashboard/order/{order_number}/payment-status', [PaymentController::class, 'refreshStatus'])
+        ->name('payments.status');
+    Route::post('/dashboard/order/{order_number}/payment-cancel', [PaymentController::class, 'cancelPendingPayment'])
+        ->name('payments.cancel');
 
     // Shopping Cart & Pemesanan
     Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
@@ -61,51 +74,66 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard/events', [DashboardController::class, 'events'])->name('dashboard.events');
         Route::get('/dashboard/orders', [DashboardController::class, 'orders'])->name('dashboard.orders');
         Route::get('/dashboard/surveys', [DashboardController::class, 'surveys'])->name('dashboard.surveys');
+        Route::post('/dashboard/surveys/{survey}/apply-recommendation', [SurveyController::class, 'applyRecommendation'])->name('dashboard.surveys.apply-recommendation');
         Route::get('/dashboard/profile', [DashboardController::class, 'profile'])->name('dashboard.profile');
         Route::post('/dashboard/profile', [DashboardController::class, 'updateProfile'])->name('dashboard.profile.update');
     });
 
     // Shared Order Detail (Customer Owner & Admin)
-    Route::get('/dashboard/order/{order_number}', [DashboardController::class, 'showOrder'])->name('dashboard.order');
+    // snap.csp middleware: menambahkan CSP header yang mengizinkan Midtrans Snap JS
+    // dan memblokir embedding dalam iframe (yang tidak didukung Snap).
+    Route::get('/dashboard/order/{order_number}', [DashboardController::class, 'showOrder'])
+        ->name('dashboard.order')
+        ->middleware('snap.csp');
 
-    // Admin & Pekerja Features
+    // Admin & Pekerja Shared Operational Routes
     Route::middleware('role:admin,pekerja')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
 
-        // Operasional
+        // Operasional Pesanan & Acara
         Route::get('/orders', [AdminController::class, 'orders'])->name('orders');
         Route::get('/orders/{order}', [AdminController::class, 'showOrder'])->name('orders.show');
         Route::post('/orders/{order}/status', [AdminController::class, 'updateOrderStatus'])->name('orders.update-status');
-
+        Route::post('/order-assignments/{assignment}/status', [AdminController::class, 'updateTaskStatus'])->name('order-assignments.update-status');
+        Route::post('/orders/{order}/return-inspection', [AdminController::class, 'submitReturnInspection'])->name('orders.return-inspection');
         Route::get('/events', [AdminController::class, 'events'])->name('events');
 
+        // Survei Lokasi (Pekerja hanya melihat survei yang ditugaskan kepadanya)
         Route::get('/surveys', [AdminController::class, 'surveys'])->name('surveys');
         Route::post('/surveys/{survey}/status', [SurveyController::class, 'updateStatus'])->name('surveys.update-status');
-        Route::post('/surveys/{survey}/assign-worker', [SurveyController::class, 'assignWorker'])->name('surveys.assign-worker');
+        Route::post('/surveys/{survey}/recommendation', [SurveyController::class, 'submitRecommendation'])->name('surveys.recommendation');
 
-        // Inventaris & Variasi
-        Route::get('/inventories', [AdminController::class, 'inventories'])->name('inventories');
-        Route::post('/inventories', [AdminController::class, 'storeInventory'])->name('inventories.store');
-        Route::post('/inventories/{inventory}/update', [AdminController::class, 'updateInventory'])->name('inventories.update');
-        Route::post('/inventories/{inventory}/delete', [AdminController::class, 'deleteInventory'])->name('inventories.delete');
+        // Rute Khusus Administrator
+        Route::middleware('role:admin')->group(function () {
+            // Penugasan Petugas Survei & Tugas Operasional Pesanan
+            Route::post('/surveys/{survey}/assign-worker', [SurveyController::class, 'assignWorker'])->name('surveys.assign-worker');
+            Route::post('/orders/{order}/assign-task', [AdminController::class, 'assignOrderTask'])->name('orders.assign-task');
+            Route::post('/orders/{order}/verify-return-inspection', [AdminController::class, 'verifyReturnInspection'])->name('orders.verify-return-inspection');
 
-        Route::get('/inventory-variants', [AdminController::class, 'inventoryVariants'])->name('inventory-variants');
-        Route::post('/inventory-variants', [AdminController::class, 'storeVariant'])->name('inventory-variants.store');
-        Route::post('/inventory-variants/{variant}/delete', [AdminController::class, 'deleteVariant'])->name('inventory-variants.delete');
+            // Inventaris Master & Variasi
+            Route::get('/inventories', [AdminController::class, 'inventories'])->name('inventories');
+            Route::post('/inventories', [AdminController::class, 'storeInventory'])->name('inventories.store');
+            Route::post('/inventories/{inventory}/update', [AdminController::class, 'updateInventory'])->name('inventories.update');
+            Route::post('/inventories/{inventory}/delete', [AdminController::class, 'deleteInventory'])->name('inventories.delete');
 
-        // Transaksi & Pelanggan
-        Route::get('/payments', [AdminController::class, 'payments'])->name('payments');
-        Route::get('/customers', [AdminController::class, 'customers'])->name('customers');
+            Route::get('/inventory-variants', [AdminController::class, 'inventoryVariants'])->name('inventory-variants');
+            Route::post('/inventory-variants', [AdminController::class, 'storeVariant'])->name('inventory-variants.store');
+            Route::post('/inventory-variants/{variant}/delete', [AdminController::class, 'deleteVariant'])->name('inventory-variants.delete');
 
-        // Manajemen Pekerja / Tim Lapangan
-        Route::get('/workers', [AdminController::class, 'workers'])->name('workers');
-        Route::post('/workers', [AdminController::class, 'storeWorker'])->name('workers.store');
-        Route::post('/workers/{worker}/update', [AdminController::class, 'updateWorker'])->name('workers.update');
-        Route::post('/workers/{worker}/delete', [AdminController::class, 'deleteWorker'])->name('workers.delete');
+            // Transaksi & Pelanggan
+            Route::get('/payments', [AdminController::class, 'payments'])->name('payments');
+            Route::get('/customers', [AdminController::class, 'customers'])->name('customers');
 
-        // Laporan
-        Route::get('/reports/orders', [ReportController::class, 'orders'])->name('reports.orders');
-        Route::get('/reports/inventories', [ReportController::class, 'inventories'])->name('reports.inventories');
-        Route::get('/reports/payments', [ReportController::class, 'payments'])->name('reports.payments');
+            // Manajemen Pekerja / Tim Lapangan
+            Route::get('/workers', [AdminController::class, 'workers'])->name('workers');
+            Route::post('/workers', [AdminController::class, 'storeWorker'])->name('workers.store');
+            Route::post('/workers/{worker}/update', [AdminController::class, 'updateWorker'])->name('workers.update');
+            Route::post('/workers/{worker}/delete', [AdminController::class, 'deleteWorker'])->name('workers.delete');
+
+            // Laporan Finansial & Operasional
+            Route::get('/reports/orders', [ReportController::class, 'orders'])->name('reports.orders');
+            Route::get('/reports/inventories', [ReportController::class, 'inventories'])->name('reports.inventories');
+            Route::get('/reports/payments', [ReportController::class, 'payments'])->name('reports.payments');
+        });
     });
 });

@@ -45,7 +45,7 @@ class DashboardController extends Controller
     public function showOrder($order_number)
     {
         $order = Order::where('order_number', $order_number)
-            ->with(['event', 'orderDetails.inventory', 'orderDetails.variant', 'payment', 'user'])
+            ->with(['event', 'orderDetails.inventory', 'orderDetails.variant', 'payment.attempts', 'user'])
             ->firstOrFail();
 
         // If not admin and not the order owner, abort
@@ -53,7 +53,10 @@ class DashboardController extends Controller
             abort(403, 'Akses tidak diizinkan.');
         }
 
-        return view('dashboard.order', compact('order'));
+        $paymentAttempts = $order->payment?->attempts()->orderByDesc('id')->get() ?? collect();
+        $currentPaymentAttempt = $paymentAttempts->first();
+
+        return view('dashboard.order', compact('order', 'paymentAttempts', 'currentPaymentAttempt'));
     }
 
     /**

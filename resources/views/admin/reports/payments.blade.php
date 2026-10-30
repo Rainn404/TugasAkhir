@@ -1,30 +1,33 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3 page-editorial-header">
     <div>
-        <h4 class="fw-bold text-black mb-1">Laporan Transaksi Pembayaran</h4>
-        <p class="text-secondary small mb-0">Rekapitulasi status penerimaan pembayaran melalui Payment Gateway.</p>
+        <span class="page-eyebrow">Rekapitulasi Gateway</span>
+        <h1 class="page-headline mb-1 font-display">Laporan Transaksi Pembayaran</h1>
+        <p class="page-subtext">Rekapitulasi status penerimaan pembayaran melalui Payment Gateway Midtrans.</p>
     </div>
-    <button onclick="window.print()" class="btn btn-outline-dark btn-sm rounded-2 d-print-none">
-        <i class="bi bi-printer me-1"></i> Cetak Laporan
-    </button>
+    <div>
+        <button onclick="window.print()" class="btn btn-outline-dark btn-sm rounded-pill px-3 py-1.5 d-print-none fw-semibold">
+            <i class="bi bi-printer me-1"></i> Cetak Laporan
+        </button>
+    </div>
 </div>
 
 <!-- Filter Periode & Status (Hidden on Print) -->
-<div class="card p-3 border rounded-3 bg-white mb-4 shadow-sm d-print-none">
+<div class="editorial-card p-3 p-md-4 mb-4 d-print-none">
     <form action="{{ route('admin.reports.payments') }}" method="GET" class="row g-2 align-items-center">
         <div class="col-md-3">
             <label class="form-label small fw-semibold text-secondary mb-1">Dari Tanggal</label>
-            <input type="date" name="start_date" value="{{ request('start_date') }}" class="form-control form-control-sm rounded-2">
+            <input type="date" name="start_date" value="{{ request('start_date') }}" class="form-control rounded-3">
         </div>
         <div class="col-md-3">
             <label class="form-label small fw-semibold text-secondary mb-1">Sampai Tanggal</label>
-            <input type="date" name="end_date" value="{{ request('end_date') }}" class="form-control form-control-sm rounded-2">
+            <input type="date" name="end_date" value="{{ request('end_date') }}" class="form-control rounded-3">
         </div>
         <div class="col-md-3">
             <label class="form-label small fw-semibold text-secondary mb-1">Status Pembayaran</label>
-            <select name="payment_status" class="form-select form-select-sm rounded-2">
+            <select name="payment_status" class="form-select rounded-3">
                 <option value="">-- Semua Status --</option>
                 <option value="paid" {{ request('payment_status') === 'paid' ? 'selected' : '' }}>Paid (Lunas)</option>
                 <option value="pending" {{ request('payment_status') === 'pending' ? 'selected' : '' }}>Pending</option>
@@ -33,8 +36,8 @@
             </select>
         </div>
         <div class="col-md-3 d-flex gap-2 align-items-end" style="height: 100%;">
-            <button type="submit" class="btn btn-dark btn-sm rounded-2 w-100 mt-auto py-1.5">Filter Data</button>
-            <a href="{{ route('admin.reports.payments') }}" class="btn btn-outline-secondary btn-sm rounded-2 mt-auto py-1.5">Reset</a>
+            <button type="submit" class="btn btn-dark rounded-pill px-4 py-2 w-100 fw-semibold mt-auto">Filter Data</button>
+            <a href="{{ route('admin.reports.payments') }}" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-semibold mt-auto">Reset</a>
         </div>
     </form>
 </div>
@@ -48,61 +51,59 @@
 </div>
 
 <!-- Summary Card -->
-<div class="card p-3 border rounded-3 bg-white mb-4 shadow-sm">
+<div class="editorial-card p-4 mb-4">
     <div class="d-flex justify-content-between align-items-center">
         <div>
-            <span class="text-secondary small d-block">Total Pembayaran Berhasil (Paid):</span>
-            <h4 class="fw-bold text-success mb-0">Rp {{ number_format($totalPaid, 0, ',', '.') }}</h4>
+            <span class="stat-kicker">Total Pembayaran Berhasil (Paid):</span>
+            <h3 class="stat-number mb-0" style="color: #15803D;">Rp {{ number_format($totalPaid, 0, ',', '.') }}</h3>
         </div>
         <div>
-            <span class="badge bg-dark small">{{ count($payments) }} Transaksi Terdata</span>
+            <span class="badge-status badge-status--neutral">{{ count($payments) }} Transaksi Terdata</span>
         </div>
     </div>
 </div>
 
 <!-- Report Table -->
-<div class="card border rounded-4 bg-white overflow-hidden shadow-sm">
+<div class="editorial-card overflow-hidden">
     <div class="table-responsive">
-        <table class="table align-middle mb-0 small">
-            <thead class="table-light">
+        <table class="editorial-table align-middle">
+            <thead>
                 <tr>
-                    <th class="py-3 px-4">No. Pesanan</th>
-                    <th class="py-3 px-3">Tanggal Transaksi</th>
-                    <th class="py-3 px-3">Pelanggan</th>
-                    <th class="py-3 px-3">Metode Bayar</th>
-                    <th class="py-3 px-3 text-end">Jumlah Tagihan</th>
-                    <th class="py-3 px-3 text-center">Status</th>
-                    <th class="py-3 px-4">Waktu Lunas</th>
+                    <th>No. Pesanan</th>
+                    <th>Tanggal Transaksi</th>
+                    <th>Pelanggan</th>
+                    <th>Metode Pembayaran</th>
+                    <th class="text-end">Jumlah Pembayaran</th>
+                    <th class="text-center">Status</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($payments as $pmt)
                     <tr>
-                        <td class="py-3 px-4 font-monospace fw-bold">{{ $pmt->order->order_number ?? '-' }}</td>
-                        <td class="py-3 px-3 text-secondary">{{ $pmt->created_at->format('d/m/Y H:i') }}</td>
-                        <td class="py-3 px-3 fw-semibold">{{ $pmt->order->user->name ?? '-' }}</td>
-                        <td class="py-3 px-3 font-monospace">{{ strtoupper($pmt->payment_type ?? 'Midtrans') }}</td>
-                        <td class="py-3 px-3 text-end fw-bold">Rp {{ number_format($pmt->gross_amount, 0, ',', '.') }}</td>
-                        <td class="py-3 px-3 text-center">
+                        <td class="font-monospace fw-bold small text-black">
+                            {{ $pmt->order->order_number ?? ('#' . $pmt->order_id) }}
+                        </td>
+                        <td class="text-secondary small">{{ $pmt->created_at->format('d/m/Y H:i') }}</td>
+                        <td class="fw-semibold small text-black">{{ $pmt->order->user->name ?? '-' }}</td>
+                        <td class="small font-monospace">{{ strtoupper($pmt->payment_type ?? 'Midtrans') }}</td>
+                        <td class="text-end fw-bold text-black small">Rp {{ number_format($pmt->gross_amount, 0, ',', '.') }}</td>
+                        <td class="text-center">
                             @php
                                 $pBadge = [
-                                    'pending' => 'bg-warning text-dark',
-                                    'paid' => 'bg-success text-white',
-                                    'failed' => 'bg-danger text-white',
-                                    'expired' => 'bg-secondary text-white',
+                                    'pending' => 'badge-status--warning',
+                                    'paid' => 'badge-status--success',
+                                    'failed' => 'badge-status--danger',
+                                    'expired' => 'badge-status--neutral',
                                 ];
                             @endphp
-                            <span class="badge {{ $pBadge[$pmt->payment_status] ?? 'bg-light text-dark' }}">
+                            <span class="badge-status {{ $pBadge[$pmt->payment_status] ?? 'badge-status--neutral' }}" style="font-size: 0.7rem;">
                                 {{ strtoupper($pmt->payment_status) }}
                             </span>
-                        </td>
-                        <td class="py-3 px-4 text-secondary">
-                            {{ $pmt->paid_at ? \Carbon\Carbon::parse($pmt->paid_at)->format('d/m/Y H:i') : '-' }}
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="text-center text-secondary py-5">
+                        <td colspan="6" class="text-center text-secondary py-5">
                             Tidak ada data transaksi pembayaran pada periode ini.
                         </td>
                     </tr>

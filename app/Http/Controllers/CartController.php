@@ -4,10 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Inventory;
 use App\Models\InventoryVariant;
+use App\Services\InventoryAvailabilityService;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
 {
+    public function __construct(private InventoryAvailabilityService $availabilityService)
+    {
+    }
+
     /**
      * Display the cart page.
      */
@@ -45,7 +50,9 @@ class CartController extends Controller
         $eventDate = $request->event_date;
 
         $inventory = Inventory::findOrFail($inventoryId);
-        $variant = $variantId ? InventoryVariant::findOrFail($variantId) : null;
+        $variant = $variantId
+            ? InventoryVariant::where('inventory_id', $inventoryId)->findOrFail($variantId)
+            : null;
 
         // Generate cart item key
         $key = $inventoryId . '_' . ($variantId ?? '0');
@@ -70,7 +77,8 @@ class CartController extends Controller
         $totalRequestedQty = $existingQty + $quantity;
 
         // Date-based stock check
-        $availableStock = $inventory->getAvailableStock($eventDate, $variantId);
+        $availableStock = $this->availabilityService
+            ->checkAvailability($inventory, $eventDate, $variantId)['available_stock'];
 
         if ($availableStock < $totalRequestedQty) {
             return back()->with('error', "Stok untuk {$inventory->name}" . ($variant ? " ({$variant->variant_name})" : "") . " pada tanggal " . date('d-m-Y', strtotime($eventDate)) . " tidak mencukupi. Tersisa: {$availableStock} {$inventory->unit}.");
@@ -100,6 +108,7 @@ class CartController extends Controller
         ];
 
         session()->put('cart', $cart);
+        session()->forget('checkout_key');
 
         return redirect()->route('cart.index')->with('success', 'Item berhasil ditambahkan ke keranjang sewa.');
     }
@@ -125,7 +134,8 @@ class CartController extends Controller
         $newQty = $request->quantity;
 
         // Validate stock availability
-        $availableStock = $inventory->getAvailableStock($cartDate, $item['variant_id']);
+        $availableStock = $this->availabilityService
+            ->checkAvailability($inventory, $cartDate, $item['variant_id'])['available_stock'];
 
         if ($availableStock < $newQty) {
             return redirect()->route('cart.index')->with('error', "Stok untuk {$item['name']} pada tanggal tersebut tidak mencukupi. Tersisa: {$availableStock} {$item['unit']}.");
@@ -136,6 +146,7 @@ class CartController extends Controller
         $cart[$key]['subtotal'] = $item['unit_price'] * $newQty;
 
         session()->put('cart', $cart);
+        session()->forget('checkout_key');
 
         return redirect()->route('cart.index')->with('success', 'Keranjang berhasil diperbarui.');
     }
@@ -150,6 +161,7 @@ class CartController extends Controller
         if (isset($cart[$key])) {
             unset($cart[$key]);
             session()->put('cart', $cart);
+            session()->forget('checkout_key');
         }
 
         if (empty($cart)) {
@@ -180,7 +192,8 @@ class CartController extends Controller
         $warnings = [];
         foreach ($cart as $key => $item) {
             $inventory = Inventory::findOrFail($item['inventory_id']);
-            $available = $inventory->getAvailableStock($newDate, $item['variant_id']);
+            $available = $this->availabilityService
+                ->checkAvailability($inventory, $newDate, $item['variant_id'])['available_stock'];
 
             if ($available < $item['quantity']) {
                 if ($available > 0) {
@@ -196,6 +209,7 @@ class CartController extends Controller
 
         session()->put('cart', $cart);
         session()->put('cart_date', $newDate);
+        session()->forget('checkout_key');
 
         if (empty($cart)) {
             session()->forget('cart_date');
