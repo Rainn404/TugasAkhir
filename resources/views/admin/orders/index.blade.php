@@ -2,14 +2,31 @@
 
 @section('content')
 <div class="page-editorial-header mb-4">
-    <span class="page-eyebrow">Manajemen Transaksi</span>
-    <h1 class="page-headline mb-1 font-display">Manajemen Pesanan</h1>
-    <p class="page-subtext">Kelola dan pantau seluruh transaksi penyewaan perlengkapan acara dan status pembayarannya.</p>
+    @if(auth()->user()->role === 'pekerja')
+        <span class="page-eyebrow">Tugas Lapangan</span>
+        @if(request('task') === 'pemeriksaan_kembali')
+            <h1 class="page-headline mb-1 font-display">Pemeriksaan Barang</h1>
+            <p class="page-subtext">Daftar pesanan dengan penugasan pemeriksaan kembali perlengkapan dan inventaris yang ditugaskan kepada Anda.</p>
+        @elseif(request('status') === 'completed')
+            <h1 class="page-headline mb-1 font-display">Riwayat Pekerjaan</h1>
+            <p class="page-subtext">Daftar riwayat pesanan dan penugasan lapangan yang telah selesai dikerjakan.</p>
+        @else
+            <h1 class="page-headline mb-1 font-display">Tugas Saya</h1>
+            <p class="page-subtext">Daftar pesanan aktif yang ditugaskan kepada Anda untuk penanganan operasional di lokasi acara.</p>
+        @endif
+    @else
+        <span class="page-eyebrow">Manajemen Transaksi</span>
+        <h1 class="page-headline mb-1 font-display">Manajemen Pesanan</h1>
+        <p class="page-subtext">Kelola dan pantau seluruh transaksi penyewaan perlengkapan acara dan status pembayarannya.</p>
+    @endif
 </div>
 
 <!-- Filter Box -->
 <div class="editorial-card p-3 p-md-4 mb-4">
     <form action="{{ route('admin.orders') }}" method="GET" class="row g-2 align-items-center">
+        @if(request()->filled('task'))
+            <input type="hidden" name="task" value="{{ request('task') }}">
+        @endif
         <div class="col-md-4">
             <select name="status" class="form-select rounded-3">
                 <option value="">-- Semua Status Pesanan --</option>
@@ -28,7 +45,7 @@
         </div>
         <div class="col-md-4 d-flex gap-2">
             <button type="submit" class="btn btn-dark rounded-pill px-4 py-2 w-100 fw-semibold">Filter Data</button>
-            <a href="{{ route('admin.orders') }}" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-semibold">Reset</a>
+            <a href="{{ auth()->user()->role === 'pekerja' ? (request()->filled('task') ? route('admin.orders', ['task' => request('task')]) : (request('status') === 'completed' ? route('admin.orders', ['status' => 'completed']) : route('admin.orders'))) : route('admin.orders') }}" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-semibold">Reset</a>
         </div>
     </form>
 </div>

@@ -78,6 +78,10 @@
                                 <a href="{{ route('admin.dashboard') }}" class="btn-nav-action-pill">
                                     <i class="bi bi-gear-fill me-1"></i> Panel Admin
                                 </a>
+                            @elseif(auth()->user()->role === 'pekerja')
+                                <a href="{{ route('admin.worker.dashboard') }}" class="btn-nav-action-pill">
+                                    <i class="bi bi-person-badge me-1"></i> Panel Petugas
+                                </a>
                             @endif
 
                             <form action="{{ route('logout') }}" method="POST" class="d-inline">

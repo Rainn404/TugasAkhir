@@ -1909,10 +1909,10 @@ class ArsyTendaSystemTest extends TestCase
             'password' => 'password123',
         ]);
 
-        $loginResponse->assertRedirect(route('admin.dashboard'));
+        $loginResponse->assertRedirect(route('admin.worker.dashboard'));
 
         // 3. Worker can access operational panel
-        $panelResponse = $this->actingAs($worker)->get('/admin');
+        $panelResponse = $this->actingAs($worker)->get(route('admin.worker.dashboard'));
         $panelResponse->assertStatus(200);
     }
 

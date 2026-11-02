@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\InventoryAvailabilityService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class SurveyController extends Controller
 {
@@ -56,19 +57,29 @@ class SurveyController extends Controller
      */
     public function updateStatus(Request $request, Survey $survey)
     {
-        if (Auth::user()->role === 'pekerja' && $survey->assigned_worker_id !== Auth::id()) {
-            abort(403, 'Akses tidak diizinkan. Anda hanya dapat memperbarui survei yang ditugaskan kepada Anda.');
-        }
+        if (Auth::user()->role === 'pekerja') {
+            if ($survey->assigned_worker_id !== Auth::id()) {
+                abort(403, 'Akses tidak diizinkan. Anda hanya dapat memperbarui survei yang ditugaskan kepada Anda.');
+            }
 
-        $request->validate([
-            'status' => ['required', 'in:menunggu,dijadwalkan,diproses,selesai,ditolak,dibatalkan'],
-            'survey_date' => ['nullable', 'date'],
-            'admin_notes' => ['nullable', 'string'],
-        ]);
+            $request->validate([
+                'status' => ['required', 'in:dijadwalkan,diproses,selesai'],
+                'survey_date' => ['nullable', 'date'],
+                'admin_notes' => ['nullable', 'string'],
+            ], [
+                'status.in' => 'Petugas lapangan hanya dapat memperbarui status operasional survei (dijadwalkan, diproses, selesai).',
+            ]);
+        } else {
+            $request->validate([
+                'status' => ['required', 'in:menunggu,dijadwalkan,diproses,selesai,ditolak,dibatalkan'],
+                'survey_date' => ['nullable', 'date'],
+                'admin_notes' => ['nullable', 'string'],
+            ]);
+        }
 
         $survey->update([
             'status' => $request->status,
-            'survey_date' => $request->survey_date,
+            'survey_date' => $request->survey_date ?? $survey->survey_date,
             'admin_notes' => $request->admin_notes,
         ]);
 
@@ -81,9 +92,16 @@ class SurveyController extends Controller
     public function assignWorker(Request $request, Survey $survey)
     {
         $request->validate([
-            'assigned_worker_id' => ['required', 'exists:users,id'],
+            'assigned_worker_id' => [
+                'required',
+                Rule::exists('users', 'id')->where(function ($query) {
+                    $query->whereIn('role', ['pekerja', 'admin']);
+                }),
+            ],
             'worker_instructions' => ['nullable', 'string', 'max:1000'],
             'survey_date' => ['nullable', 'date'],
+        ], [
+            'assigned_worker_id.exists' => 'Akun yang dipilih bukan akun petugas lapangan atau administrator.',
         ]);
 
         $worker = User::findOrFail($request->assigned_worker_id);

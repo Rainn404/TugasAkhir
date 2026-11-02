@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
 {
@@ -28,46 +29,86 @@ class AdminController extends Controller
      */
     public function dashboard()
     {
-        $isWorker = Auth::user()->role === 'pekerja';
+        if (Auth::user()->role === 'pekerja') {
+            return redirect()->route('admin.worker.dashboard');
+        }
+
         $stats = [
-            'total_sales' => $isWorker ? 0 : Order::where('status', '!=', 'cancelled')->sum('total_amount'),
+            'total_sales' => Order::where('status', '!=', 'cancelled')->sum('total_amount'),
             'total_orders' => Order::count(),
             'active_orders' => Order::whereIn('status', ['confirmed', 'preparing', 'ongoing'])->count(),
             'pending_payment_count' => Order::where('status', 'pending_payment')->count(),
             'paid_count' => Order::where('status', 'paid')->count(),
             'total_inventories' => Inventory::count(),
-            'active_surveys_count' => $isWorker
-                ? Survey::where('assigned_worker_id', Auth::id())->whereIn('status', ['dijadwalkan', 'diproses'])->count()
-                : Survey::whereIn('status', ['menunggu', 'dijadwalkan', 'diproses'])->count(),
-            'my_surveys_count' => Survey::where('assigned_worker_id', Auth::id())->count(),
+            'active_surveys_count' => Survey::whereIn('status', ['menunggu', 'dijadwalkan', 'diproses'])->count(),
             'upcoming_events_count' => Event::whereDate('event_date', '>=', now()->toDateString())->count(),
         ];
 
         $recentOrders = Order::with(['user', 'event'])->orderBy('created_at', 'desc')->take(6)->get();
-        $recentSurveys = $isWorker
-            ? Survey::with('user')->where('assigned_worker_id', Auth::id())->orderBy('created_at', 'desc')->take(5)->get()
-            : Survey::with('user')->orderBy('created_at', 'desc')->take(5)->get();
+        $recentSurveys = Survey::with(['user', 'assignedWorker'])->orderBy('created_at', 'desc')->take(5)->get();
         $upcomingEvents = Event::with('user')->whereDate('event_date', '>=', now()->toDateString())->orderBy('event_date', 'asc')->take(5)->get();
-        $lowStockInventories = $isWorker ? collect() : Inventory::with('category')->where('stock', '<=', 10)->orderBy('stock', 'asc')->take(5)->get();
+        $lowStockInventories = Inventory::with('category')->where('stock', '<=', 10)->orderBy('stock', 'asc')->take(5)->get();
 
-        $myAssignments = $isWorker
-            ? OrderAssignment::with(['order.event', 'order.user'])
-                ->where('user_id', Auth::id())
-                ->orderByRaw("CASE WHEN status = 'pending' THEN 1 WHEN status = 'in_progress' THEN 2 ELSE 3 END")
-                ->orderBy('scheduled_at', 'asc')
-                ->take(10)
-                ->get()
-            : collect();
-
-        return view('admin.dashboard', compact('stats', 'recentOrders', 'recentSurveys', 'upcomingEvents', 'lowStockInventories', 'isWorker', 'myAssignments'));
+        return view('admin.dashboard', compact('stats', 'recentOrders', 'recentSurveys', 'upcomingEvents', 'lowStockInventories'));
     }
 
     /**
-     * List all orders.
+     * Worker / Petugas Lapangan Dashboard landing page.
+     */
+    public function workerDashboard()
+    {
+        $workerId = Auth::id();
+
+        // Tugas operasional yang ditugaskan kepada petugas ini
+        $myAssignments = OrderAssignment::with(['order.event', 'order.user'])
+            ->where('user_id', $workerId)
+            ->orderByRaw("CASE WHEN status = 'pending' THEN 1 WHEN status = 'in_progress' THEN 2 ELSE 3 END")
+            ->orderBy('scheduled_at', 'asc')
+            ->get();
+
+        // Survei lokasi yang ditugaskan kepada petugas ini
+        $mySurveys = Survey::with('user')
+            ->where('assigned_worker_id', $workerId)
+            ->orderByRaw("CASE WHEN status IN ('dijadwalkan', 'diproses') THEN 1 ELSE 2 END")
+            ->orderBy('survey_date', 'asc')
+            ->get();
+
+        // Ringkasan metrik tugas pekerja
+        $stats = [
+            'pending_tasks' => $myAssignments->where('status', 'pending')->count(),
+            'in_progress_tasks' => $myAssignments->where('status', 'in_progress')->count(),
+            'completed_tasks' => $myAssignments->where('status', 'completed')->count(),
+            'active_surveys' => $mySurveys->whereIn('status', ['dijadwalkan', 'diproses'])->count(),
+            'today_tasks' => $myAssignments->filter(function ($a) {
+                return $a->scheduled_at && \Carbon\Carbon::parse($a->scheduled_at)->isToday();
+            })->count(),
+        ];
+
+        // Kegiatan acara terdekat yang melibatkan tugas pekerja ini
+        $myEvents = Event::with('user')
+            ->whereHas('order.assignments', function ($q) use ($workerId) {
+                $q->where('user_id', $workerId);
+            })
+            ->whereDate('event_date', '>=', now()->toDateString())
+            ->orderBy('event_date', 'asc')
+            ->take(5)
+            ->get();
+
+        return view('admin.worker.dashboard', compact('myAssignments', 'mySurveys', 'stats', 'myEvents'));
+    }
+
+    /**
+     * List all orders (scoped to assigned orders for workers).
      */
     public function orders(Request $request)
     {
         $query = Order::with(['user', 'event', 'payment']);
+
+        if (Auth::user()->role === 'pekerja') {
+            $query->whereHas('assignments', function ($q) {
+                $q->where('user_id', Auth::id());
+            });
+        }
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -79,16 +120,32 @@ class AdminController extends Controller
             });
         }
 
+        if ($request->filled('task')) {
+            $query->whereHas('assignments', function ($q) use ($request) {
+                $q->where('task_type', $request->task);
+                if (Auth::user()->role === 'pekerja') {
+                    $q->where('user_id', Auth::id());
+                }
+            });
+        }
+
         $orders = $query->orderBy('created_at', 'desc')->paginate(15);
 
         return view('admin.orders.index', compact('orders'));
     }
 
     /**
-     * Show single order detail.
+     * Show single order detail (guarded for workers).
      */
     public function showOrder(Order $order)
     {
+        if (Auth::user()->role === 'pekerja') {
+            $isAssigned = $order->assignments()->where('user_id', Auth::id())->exists();
+            if (!$isAssigned) {
+                abort(403, 'Akses tidak diizinkan. Anda hanya dapat melihat detail pesanan yang ditugaskan kepada Anda.');
+            }
+        }
+
         $order->load([
             'user',
             'event',
@@ -141,6 +198,11 @@ class AdminController extends Controller
 
         // 3. Guard wewenang Petugas Lapangan (Pekerja)
         if ($user->role === 'pekerja') {
+            $isAssigned = $order->assignments()->where('user_id', $user->id)->exists();
+            if (!$isAssigned) {
+                return back()->with('error', 'Akses ditolak. Anda tidak memiliki penugasan operasional pada pesanan ini.');
+            }
+
             $allowedForWorker = [
                 'confirmed' => ['preparing'],
                 'preparing' => ['ongoing'],
@@ -223,11 +285,22 @@ class AdminController extends Controller
      */
     public function assignOrderTask(Request $request, Order $order)
     {
+        if (in_array($order->status, ['cancelled', 'completed'], true)) {
+            return back()->with('error', "Tugas operasional tidak dapat ditambahkan pada pesanan yang berstatus " . strtoupper($order->status) . ".");
+        }
+
         $request->validate([
-            'user_id' => ['required', 'exists:users,id'],
+            'user_id' => [
+                'required',
+                Rule::exists('users', 'id')->where(function ($query) {
+                    $query->whereIn('role', ['pekerja', 'admin']);
+                }),
+            ],
             'task_type' => ['required', 'in:persiapan,pengiriman,pemasangan,pemeriksaan_kembali'],
             'scheduled_at' => ['nullable', 'date'],
             'instructions' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'user_id.exists' => 'Akun yang dipilih tidak valid atau bukan akun petugas/admin.',
         ]);
 
         $assignment = OrderAssignment::updateOrCreate(
@@ -279,6 +352,14 @@ class AdminController extends Controller
      */
     public function submitReturnInspection(Request $request, Order $order)
     {
+        if (in_array($order->status, ['completed', 'cancelled'], true)) {
+            return back()->with('error', 'Pemeriksaan pengembalian tidak dapat diubah karena pesanan sudah berstatus ' . strtoupper($order->status) . '.');
+        }
+
+        if ($order->returnInspection && $order->returnInspection->status === 'verified') {
+            return back()->with('error', 'Pemeriksaan pengembalian untuk pesanan ini sudah diverifikasi secara resmi oleh Administrator dan tidak dapat diubah lagi.');
+        }
+
         if (Auth::user()->role === 'pekerja') {
             $hasInspectionTask = $order->assignments()
                 ->where('user_id', Auth::id())
@@ -430,6 +511,12 @@ class AdminController extends Controller
     public function events(Request $request)
     {
         $query = Event::with(['user', 'order']);
+
+        if (Auth::user()->role === 'pekerja') {
+            $query->whereHas('order.assignments', function ($q) {
+                $q->where('user_id', Auth::id());
+            });
+        }
 
         if ($request->filled('date')) {
             $query->whereDate('event_date', $request->date);
@@ -696,6 +783,7 @@ class AdminController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $worker->id],
+            'role' => ['nullable', 'in:admin,pekerja'],
             'phone' => ['required', 'string', 'max:20'],
             'address' => ['nullable', 'string'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
@@ -707,6 +795,10 @@ class AdminController extends Controller
             'phone' => $request->phone,
             'address' => $request->address,
         ];
+
+        if ($request->filled('role')) {
+            $data['role'] = $request->role;
+        }
 
         if ($request->filled('password')) {
             $data['password'] = bcrypt($request->password);
@@ -879,5 +971,45 @@ class AdminController extends Controller
         SystemSetting::where('key', $key)->delete();
 
         return back()->with('success', 'Gambar berhasil dikembalikan ke tampilan default.');
+    }
+
+    /**
+     * User profile inside administrative/worker panel.
+     */
+    public function profile()
+    {
+        $user = Auth::user();
+        return view('admin.profile', compact('user'));
+    }
+
+    /**
+     * Update user profile inside administrative/worker panel.
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'address' => ['nullable', 'string'],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $data = [
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'address' => $request->address,
+        ];
+
+        if ($request->filled('password')) {
+            $data['password'] = bcrypt($request->password);
+        }
+
+        $user->update($data);
+
+        return back()->with('success', 'Profil Anda berhasil diperbarui.');
     }
 }

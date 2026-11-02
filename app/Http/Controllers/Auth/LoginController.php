@@ -12,8 +12,10 @@ class LoginController extends Controller
     {
         if (Auth::check()) {
             $role = Auth::user()->role;
-            if (in_array($role, ['admin', 'pekerja'])) {
+            if ($role === 'admin') {
                 return redirect()->route('admin.dashboard');
+            } elseif ($role === 'pekerja') {
+                return redirect()->route('admin.worker.dashboard');
             }
             return redirect()->route('home');
         }
@@ -35,7 +37,7 @@ class LoginController extends Controller
                 return redirect()->intended(route('admin.dashboard'))
                     ->with('success', 'Selamat datang kembali, Administrator!');
             } elseif ($user->role === 'pekerja') {
-                return redirect()->intended(route('admin.dashboard'))
+                return redirect()->intended(route('admin.worker.dashboard'))
                     ->with('success', 'Selamat datang, Petugas Lapangan ' . $user->name . '!');
             }
 

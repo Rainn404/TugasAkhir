@@ -54,7 +54,7 @@ class ContentManagementTest extends TestCase
     public function test_worker_cannot_access_content_management()
     {
         $response = $this->actingAs($this->worker)->get(route('admin.content.index'));
-        $response->assertRedirect(route('admin.dashboard'));
+        $response->assertRedirect(route('admin.worker.dashboard'));
     }
 
     public function test_admin_can_view_content_management()

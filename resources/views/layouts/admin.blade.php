@@ -24,7 +24,7 @@
     <!-- Admin Sidebar Navigation -->
     <aside class="admin-sidebar" id="adminSidebar" aria-label="Navigasi operasional">
         <div class="sidebar-brand-wrap d-flex align-items-center justify-content-between">
-            <a href="{{ route('admin.dashboard') }}" class="brand-arsy brand-arsy--light text-decoration-none" aria-label="Arsy Tenda Admin">
+            <a href="{{ auth()->user()->role === 'admin' ? route('admin.dashboard') : route('admin.worker.dashboard') }}" class="brand-arsy brand-arsy--light text-decoration-none" aria-label="Arsy Tenda Admin">
                 <span class="brand-mark">ARSY</span>
                 <span class="brand-name">TENDA</span>
             </a>
@@ -34,9 +34,10 @@
         </div>
 
         <nav class="sidebar-nav" aria-label="Navigasi operasional">
-            <!-- Dashboard Link -->
+        @if(auth()->user()->role === 'admin')
+            <!-- ================= SIDEBAR ADMINISTRATOR ================= -->
             <a href="{{ route('admin.dashboard') }}" class="sidebar-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
-                <i class="bi bi-grid-1x2"></i> <span>Dashboard</span>
+                <i class="bi bi-grid-1x2"></i> <span>Dashboard Admin</span>
             </a>
 
             <!-- Operasional -->
@@ -51,7 +52,6 @@
                 <i class="bi bi-geo-alt"></i> <span>Survei Lokasi</span>
             </a>
 
-            @if(auth()->user()->role === 'admin')
             <!-- Inventaris -->
             <div class="sidebar-group-label">Inventaris</div>
             <a href="{{ route('admin.inventories') }}" class="sidebar-link {{ request()->routeIs('admin.inventories*') ? 'active' : '' }}">
@@ -67,7 +67,7 @@
                 <i class="bi bi-credit-card"></i> <span>Pembayaran</span>
             </a>
 
-            <!-- Data Pelanggan & Pekerja -->
+            <!-- Data Pengguna -->
             <div class="sidebar-group-label">Data Pengguna</div>
             <a href="{{ route('admin.customers') }}" class="sidebar-link {{ request()->routeIs('admin.customers*') ? 'active' : '' }}">
                 <i class="bi bi-people"></i> <span>Pelanggan</span>
@@ -88,19 +88,52 @@
                 <i class="bi bi-file-earmark-ruled"></i> <span>Laporan Pembayaran</span>
             </a>
 
-            <!-- Konten & Tampilan Web -->
+            <!-- Konten & Media -->
             <div class="sidebar-group-label">Konten &amp; Media</div>
             <a href="{{ route('admin.content.index') }}" class="sidebar-link {{ request()->routeIs('admin.content*') ? 'active' : '' }}">
                 <i class="bi bi-images"></i> <span>Gambar &amp; Portofolio</span>
             </a>
-            @endif
 
             <!-- Sistem -->
             <div class="sidebar-group-label">Sistem</div>
             <a href="{{ route('home') }}" class="sidebar-link" target="_blank">
                 <i class="bi bi-globe"></i> <span>Lihat Website</span>
             </a>
-            <form action="{{ route('logout') }}" method="POST" class="mt-3 px-3">
+            <a href="{{ route('admin.profile') }}" class="sidebar-link {{ request()->routeIs('admin.profile*') ? 'active' : '' }}">
+                <i class="bi bi-person-gear"></i> <span>Profil Saya</span>
+            </a>
+        @else
+            <!-- ================= SIDEBAR PETUGAS LAPANGAN ================= -->
+            <a href="{{ route('admin.worker.dashboard') }}" class="sidebar-link {{ request()->routeIs('admin.worker.dashboard') ? 'active' : '' }}">
+                <i class="bi bi-grid-1x2"></i> <span>Dashboard Petugas</span>
+            </a>
+
+            <!-- Tugas Lapangan -->
+            <div class="sidebar-group-label">Tugas Lapangan</div>
+            <a href="{{ route('admin.orders') }}" class="sidebar-link {{ request()->routeIs('admin.orders*') && !request()->filled('task') && request('status') !== 'completed' ? 'active' : '' }}">
+                <i class="bi bi-card-checklist"></i> <span>Tugas Saya</span>
+            </a>
+            <a href="{{ route('admin.events') }}" class="sidebar-link {{ request()->routeIs('admin.events*') ? 'active' : '' }}">
+                <i class="bi bi-calendar-event"></i> <span>Jadwal Kerja</span>
+            </a>
+            <a href="{{ route('admin.surveys') }}" class="sidebar-link {{ request()->routeIs('admin.surveys*') ? 'active' : '' }}" title="Survei lokasi yang ditugaskan kepada saya">
+                <i class="bi bi-geo-alt"></i> <span>Survei Lokasi</span>
+            </a>
+            <a href="{{ route('admin.orders', ['task' => 'pemeriksaan_kembali']) }}" class="sidebar-link {{ request()->routeIs('admin.orders*') && request('task') === 'pemeriksaan_kembali' ? 'active' : '' }}" title="Tugas pemeriksaan barang pengembalian">
+                <i class="bi bi-box-seam-check"></i> <span>Pemeriksaan Barang</span>
+            </a>
+            <a href="{{ route('admin.orders', ['status' => 'completed']) }}" class="sidebar-link {{ request()->routeIs('admin.orders*') && request('status') === 'completed' ? 'active' : '' }}" title="Riwayat pekerjaan yang telah selesai">
+                <i class="bi bi-clock-history"></i> <span>Riwayat Pekerjaan</span>
+            </a>
+
+            <!-- Profil Saya -->
+            <div class="sidebar-group-label">Akun</div>
+            <a href="{{ route('admin.profile') }}" class="sidebar-link {{ request()->routeIs('admin.profile*') ? 'active' : '' }}">
+                <i class="bi bi-person-circle"></i> <span>Profil Saya</span>
+            </a>
+        @endif
+
+            <form action="{{ route('logout') }}" method="POST" class="mt-4 px-3">
                 @csrf
                 <button type="submit" class="btn btn-outline-danger btn-sm w-100 py-1.5 rounded-pill d-flex align-items-center justify-content-center gap-2">
                     <i class="bi bi-box-arrow-right"></i> <span>Logout</span>
@@ -127,13 +160,13 @@
                 </div>
             </div>
             <div class="d-flex align-items-center gap-2">
-                <div class="admin-role-badge {{ auth()->user()->role === 'admin' ? 'admin-role-badge--admin' : 'admin-role-badge--worker' }}" title="{{ auth()->user()->name }} ({{ auth()->user()->role === 'admin' ? 'Administrator' : 'Pekerja' }})">
+                <a href="{{ route('admin.profile') }}" class="admin-role-badge text-decoration-none {{ auth()->user()->role === 'admin' ? 'admin-role-badge--admin' : 'admin-role-badge--worker' }}" title="{{ auth()->user()->name }} ({{ auth()->user()->role === 'admin' ? 'Administrator' : 'Petugas Lapangan' }}) - Kelola Profil">
                     <i class="bi {{ auth()->user()->role === 'admin' ? 'bi-shield-check' : 'bi-person-badge' }}"></i>
                     <span class="admin-role-name">
-                        <span class="d-none d-sm-inline">{{ auth()->user()->role === 'admin' ? 'Administrator' : 'Pekerja' }}: </span>
+                        <span class="d-none d-sm-inline">{{ auth()->user()->role === 'admin' ? 'Administrator' : 'Petugas Lapangan' }}: </span>
                         <strong>{{ auth()->user()->name }}</strong>
                     </span>
-                </div>
+                </a>
             </div>
         </header>
 

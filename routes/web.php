@@ -89,6 +89,7 @@ Route::middleware('auth')->group(function () {
     // Admin & Pekerja Shared Operational Routes
     Route::middleware('role:admin,pekerja')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+        Route::get('/worker', [AdminController::class, 'workerDashboard'])->name('worker.dashboard');
 
         // Operasional Pesanan & Acara
         Route::get('/orders', [AdminController::class, 'orders'])->name('orders');
@@ -102,6 +103,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/surveys', [AdminController::class, 'surveys'])->name('surveys');
         Route::post('/surveys/{survey}/status', [SurveyController::class, 'updateStatus'])->name('surveys.update-status');
         Route::post('/surveys/{survey}/recommendation', [SurveyController::class, 'submitRecommendation'])->name('surveys.recommendation');
+
+        // Profil Pengguna Panel (Petugas & Admin)
+        Route::get('/profile', [AdminController::class, 'profile'])->name('profile');
+        Route::post('/profile', [AdminController::class, 'updateProfile'])->name('profile.update');
 
         // Rute Khusus Administrator
         Route::middleware('role:admin')->group(function () {

@@ -2,9 +2,15 @@
 
 @section('content')
 <div class="page-editorial-header mb-4">
-    <span class="page-eyebrow">Survei Lapangan</span>
-    <h1 class="page-headline mb-1 font-display">Manajemen Survei Lokasi</h1>
-    <p class="page-subtext">Kelola permohonan kunjungan teknis, tugaskan tim lapangan, dan pantau status pengukuran lokasi.</p>
+    @if(auth()->user()->role === 'pekerja')
+        <span class="page-eyebrow">Tugas Lapangan</span>
+        <h1 class="page-headline mb-1 font-display">Survei Lokasi</h1>
+        <p class="page-subtext">Daftar penugasan survei teknis dan pengukuran lokasi yang ditugaskan kepada Anda.</p>
+    @else
+        <span class="page-eyebrow">Survei Lapangan</span>
+        <h1 class="page-headline mb-1 font-display">Manajemen Survei Lokasi</h1>
+        <p class="page-subtext">Kelola permohonan kunjungan teknis, tugaskan tim lapangan, dan pantau status pengukuran lokasi.</p>
+    @endif
 </div>
 
 <!-- Filter Status -->
@@ -310,12 +316,18 @@
                                                 <div class="mb-3">
                                                     <label class="form-label small fw-semibold text-black">Pilih Status Survei</label>
                                                     <select name="status" class="form-select rounded-3" required>
-                                                        <option value="menunggu" {{ $survey->status === 'menunggu' ? 'selected' : '' }}>Menunggu Konfirmasi</option>
-                                                        <option value="dijadwalkan" {{ $survey->status === 'dijadwalkan' ? 'selected' : '' }}>Dijadwalkan</option>
-                                                        <option value="diproses" {{ $survey->status === 'diproses' ? 'selected' : '' }}>Diproses (Kunjungan Tim)</option>
-                                                        <option value="selesai" {{ $survey->status === 'selesai' ? 'selected' : '' }}>Selesai</option>
-                                                        <option value="ditolak" {{ $survey->status === 'ditolak' ? 'selected' : '' }}>Ditolak</option>
-                                                        <option value="dibatalkan" {{ $survey->status === 'dibatalkan' ? 'selected' : '' }}>Dibatalkan</option>
+                                                        @if(auth()->user()->role === 'pekerja')
+                                                            <option value="dijadwalkan" {{ $survey->status === 'dijadwalkan' ? 'selected' : '' }}>Dijadwalkan</option>
+                                                            <option value="diproses" {{ $survey->status === 'diproses' ? 'selected' : '' }}>Diproses (Kunjungan Tim)</option>
+                                                            <option value="selesai" {{ $survey->status === 'selesai' ? 'selected' : '' }}>Selesai</option>
+                                                        @else
+                                                            <option value="menunggu" {{ $survey->status === 'menunggu' ? 'selected' : '' }}>Menunggu Konfirmasi</option>
+                                                            <option value="dijadwalkan" {{ $survey->status === 'dijadwalkan' ? 'selected' : '' }}>Dijadwalkan</option>
+                                                            <option value="diproses" {{ $survey->status === 'diproses' ? 'selected' : '' }}>Diproses (Kunjungan Tim)</option>
+                                                            <option value="selesai" {{ $survey->status === 'selesai' ? 'selected' : '' }}>Selesai</option>
+                                                            <option value="ditolak" {{ $survey->status === 'ditolak' ? 'selected' : '' }}>Ditolak</option>
+                                                            <option value="dibatalkan" {{ $survey->status === 'dibatalkan' ? 'selected' : '' }}>Dibatalkan</option>
+                                                        @endif
                                                     </select>
                                                 </div>
                                                 <div class="mb-3">

@@ -21,7 +21,10 @@ class RoleMiddleware
         $user = Auth::user();
 
         if (!in_array($user->role, $roles)) {
-            if (in_array($user->role, ['admin', 'pekerja'])) {
+            if ($user->role === 'pekerja') {
+                return redirect()->route('admin.worker.dashboard')->with('error', 'Anda tidak memiliki akses ke halaman tersebut.');
+            }
+            if ($user->role === 'admin') {
                 return redirect()->route('admin.dashboard')->with('error', 'Anda tidak memiliki akses ke halaman tersebut.');
             }
             return redirect()->route('home')->with('error', 'Anda tidak memiliki akses ke halaman tersebut.');

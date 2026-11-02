@@ -106,7 +106,7 @@
                         </td>
                         <td class="text-center">
                             <span class="badge-status {{ $worker->role === 'admin' ? 'badge-status--neutral' : 'badge-status--info' }}" style="font-size: 0.72rem;">
-                                {{ strtoupper($worker->role) }}
+                                {{ $worker->role === 'admin' ? 'ADMIN' : 'PETUGAS LAPANGAN' }}
                             </span>
                         </td>
                         <td class="text-center">
@@ -155,6 +155,13 @@
                                                         <div class="col-md-6">
                                                             <label class="form-label small fw-semibold text-black">Alamat / Posisi</label>
                                                             <input type="text" name="address" class="form-control rounded-3" value="{{ $worker->address }}">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label small fw-semibold text-black">Role Akses</label>
+                                                            <select name="role" class="form-select rounded-3">
+                                                                <option value="pekerja" {{ $worker->role === 'pekerja' ? 'selected' : '' }}>Petugas Lapangan (Pekerja)</option>
+                                                                <option value="admin" {{ $worker->role === 'admin' ? 'selected' : '' }}>Administrator (Admin)</option>
+                                                            </select>
                                                         </div>
                                                         <div class="col-md-6">
                                                             <label class="form-label small fw-semibold text-black">Password Baru (Opsional)</label>

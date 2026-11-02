@@ -237,7 +237,7 @@
                 <h5 class="fw-bold text-black font-display fs-6 mb-0 d-flex align-items-center gap-2">
                     <i class="bi bi-people-fill text-secondary"></i> Penugasan Tim Lapangan
                 </h5>
-                @if(auth()->user()->role === 'admin')
+                @if(auth()->user()->role === 'admin' && !in_array($order->status, ['completed', 'cancelled']))
                     <button type="button" class="btn btn-dark btn-sm rounded-pill px-3 py-1" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#assignTaskModal">
                         <i class="bi bi-plus-lg me-1"></i> Tambah Tugas
                     </button>
@@ -456,9 +456,15 @@
 
             <!-- Tombol Input / Edit Pemeriksaan -->
             <div class="mt-3">
-                <button type="button" class="btn btn-outline-dark btn-sm rounded-pill px-3 py-1.5 w-100 fw-semibold" data-bs-toggle="modal" data-bs-target="#inputReturnModal">
-                    <i class="bi bi-clipboard2-check me-1"></i> {{ $order->returnInspection ? 'Perbarui Data Pemeriksaan' : 'Input Hasil Pemeriksaan Pengembalian' }}
-                </button>
+                @if(in_array($order->status, ['completed', 'cancelled']) || ($order->returnInspection && $order->returnInspection->status === 'verified'))
+                    <div class="alert alert-secondary py-2 px-3 small rounded-pill mb-0 text-center fw-medium" style="font-size: 0.78rem;">
+                        <i class="bi bi-lock-fill me-1"></i> Data pemeriksaan pengembalian telah diverifikasi dan terkunci.
+                    </div>
+                @else
+                    <button type="button" class="btn btn-outline-dark btn-sm rounded-pill px-3 py-1.5 w-100 fw-semibold" data-bs-toggle="modal" data-bs-target="#inputReturnModal">
+                        <i class="bi bi-clipboard2-check me-1"></i> {{ $order->returnInspection ? 'Perbarui Data Pemeriksaan' : 'Input Hasil Pemeriksaan Pengembalian' }}
+                    </button>
+                @endif
             </div>
         </div>
     </div>

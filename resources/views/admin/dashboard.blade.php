@@ -4,8 +4,8 @@
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 mb-md-4 gap-2 gap-md-3 page-editorial-header">
     <div>
         <span class="page-eyebrow">Operasional Arsy Tenda</span>
-        <h1 class="page-headline mb-1 font-display">{{ auth()->user()->role === 'admin' ? 'Dashboard Administrator' : 'Dashboard Petugas Lapangan' }}</h1>
-        <p class="page-subtext">{{ auth()->user()->role === 'admin' ? 'Ringkasan operasional dan statistik persewaan Arsy Tenda.' : 'Ringkasan tugas lapangan dan jadwal operasional Anda.' }}</p>
+        <h1 class="page-headline mb-1 font-display">Dashboard Administrator</h1>
+        <p class="page-subtext">Ringkasan operasional dan statistik bisnis persewaan Arsy Tenda.</p>
     </div>
     <div>
         <span class="badge-status badge-status--neutral px-3 py-2">
@@ -16,7 +16,6 @@
 
 <!-- Statistic Cards -->
 <div class="row g-2 g-md-3 mb-4">
-    @if(auth()->user()->role === 'admin')
     <div class="col-6 col-lg-3">
         <div class="editorial-stat-card">
             <div class="d-flex justify-content-between align-items-start gap-1">
@@ -27,18 +26,6 @@
             <p class="stat-hint">Akumulasi pesanan lunas</p>
         </div>
     </div>
-    @else
-    <div class="col-6 col-lg-3">
-        <div class="editorial-stat-card">
-            <div class="d-flex justify-content-between align-items-start gap-1">
-                <span class="stat-kicker" style="color: #2563EB;">Survei Saya</span>
-                <span class="badge-status badge-status--info p-1 p-sm-1.5"><i class="bi bi-person-check fs-6 text-primary"></i></span>
-            </div>
-            <div class="stat-number my-1" style="color: #2563EB;">{{ $stats['my_surveys_count'] ?? 0 }}</div>
-            <p class="stat-hint">Total tugas survei Anda</p>
-        </div>
-    </div>
-    @endif
     <div class="col-6 col-lg-3">
         <div class="editorial-stat-card">
             <div class="d-flex justify-content-between align-items-start gap-1">
@@ -158,75 +145,31 @@
 </div>
 
 <div class="row g-4">
-    @if($isWorker)
-        <!-- Tugas Operasional Pesanan untuk Pekerja -->
-        <div class="col-lg-6">
-            <div class="editorial-card p-4">
-                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom" style="border-color: #E7E2DA !important;">
-                    <h5 class="fw-bold text-black mb-0 font-display fs-6">
-                        <i class="bi bi-list-task me-1 text-secondary"></i> Tugas Operasional Anda
-                    </h5>
-                    <span class="small text-secondary fw-semibold">{{ $myAssignments->count() }} Tugas</span>
-                </div>
-
-                <ul class="list-group list-group-flush mb-0">
-                    @forelse($myAssignments as $assignment)
-                        @php
-                            $taskLabels = [
-                                'persiapan' => 'Persiapan Barang',
-                                'pengiriman' => 'Pengiriman Lokasi',
-                                'pemasangan' => 'Pemasangan Tenda / Alat',
-                                'pemeriksaan_kembali' => 'Pemeriksaan Pengembalian',
-                            ];
-                        @endphp
-                        <li class="list-group-item px-0 py-2.5 d-flex justify-content-between align-items-center border-bottom last-border-0" style="border-color: #F0ECE6 !important; background: transparent;">
-                            <div>
-                                <span class="fw-semibold text-black small d-block">
-                                    {{ $taskLabels[$assignment->task_type] ?? $assignment->task_type }}
-                                </span>
-                                <small class="text-secondary">
-                                    Pesanan #{{ $assignment->order->order_number ?? '-' }} &bull; {{ $assignment->order->event->event_name ?? 'Acara' }}
-                                </small>
-                            </div>
-                            <div class="text-end">
-                                <a href="{{ route('admin.orders.show', $assignment->order_id) }}" class="btn btn-outline-dark btn-sm rounded-pill px-2.5 py-0.5" style="font-size: 0.72rem;">
-                                    Buka Pesanan
-                                </a>
-                            </div>
-                        </li>
-                    @empty
-                        <li class="list-group-item px-0 py-3 text-center text-secondary small" style="background: transparent;">Belum ada tugas operasional yang ditugaskan kepada Anda.</li>
-                    @endforelse
-                </ul>
+    <!-- Inventaris Stok Rendah -->
+    <div class="col-lg-6">
+        <div class="editorial-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom" style="border-color: #E7E2DA !important;">
+                <h5 class="fw-bold text-black mb-0 font-display fs-6">Inventaris Stok Menipis</h5>
+                <a href="{{ route('admin.inventories') }}" class="small text-secondary text-decoration-none fw-semibold">Kelola →</a>
             </div>
-        </div>
-    @else
-        <!-- Inventaris Stok Rendah (Admin Only) -->
-        <div class="col-lg-6">
-            <div class="editorial-card p-4">
-                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom" style="border-color: #E7E2DA !important;">
-                    <h5 class="fw-bold text-black mb-0 font-display fs-6">Inventaris Stok Menipis</h5>
-                    <a href="{{ route('admin.inventories') }}" class="small text-secondary text-decoration-none fw-semibold">Kelola →</a>
-                </div>
 
-                <ul class="list-group list-group-flush mb-0">
-                    @forelse($lowStockInventories as $inv)
-                        <li class="list-group-item px-0 py-2.5 d-flex justify-content-between align-items-center border-bottom last-border-0" style="border-color: #F0ECE6 !important; background: transparent;">
-                            <div>
-                                <span class="fw-semibold text-black small d-block">{{ $inv->name }}</span>
-                                <small class="text-secondary">{{ $inv->category->name }}</small>
-                            </div>
-                            <span class="badge-status {{ $inv->stock <= 5 ? 'badge-status--danger' : 'badge-status--warning' }}" style="font-size: 0.72rem;">
-                                Tersisa: {{ $inv->stock }} {{ $inv->unit }}
-                            </span>
-                        </li>
-                    @empty
-                        <li class="list-group-item px-0 py-3 text-center text-secondary small" style="background: transparent;">Seluruh stok inventaris dalam kondisi aman.</li>
-                    @endforelse
-                </ul>
-            </div>
+            <ul class="list-group list-group-flush mb-0">
+                @forelse($lowStockInventories as $inv)
+                    <li class="list-group-item px-0 py-2.5 d-flex justify-content-between align-items-center border-bottom last-border-0" style="border-color: #F0ECE6 !important; background: transparent;">
+                        <div>
+                            <span class="fw-semibold text-black small d-block">{{ $inv->name }}</span>
+                            <small class="text-secondary">{{ $inv->category->name }}</small>
+                        </div>
+                        <span class="badge-status {{ $inv->stock <= 5 ? 'badge-status--danger' : 'badge-status--warning' }}" style="font-size: 0.72rem;">
+                            Tersisa: {{ $inv->stock }} {{ $inv->unit }}
+                        </span>
+                    </li>
+                @empty
+                    <li class="list-group-item px-0 py-3 text-center text-secondary small" style="background: transparent;">Seluruh stok inventaris dalam kondisi aman.</li>
+                @endforelse
+            </ul>
         </div>
-    @endif
+    </div>
 
     <!-- Survei Terbaru -->
     <div class="col-lg-6">

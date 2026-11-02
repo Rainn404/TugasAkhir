@@ -2,9 +2,15 @@
 
 @section('content')
 <div class="page-editorial-header mb-4">
-    <span class="page-eyebrow">Jadwal Lapangan</span>
-    <h1 class="page-headline mb-1 font-display">Manajemen Kegiatan Acara</h1>
-    <p class="page-subtext">Pantau seluruh agenda dan jadwal pelaksanaan acara yang telah terkonfirmasi.</p>
+    @if(auth()->user()->role === 'pekerja')
+        <span class="page-eyebrow">Tugas Lapangan</span>
+        <h1 class="page-headline mb-1 font-display">Jadwal Kerja</h1>
+        <p class="page-subtext">Pantau agenda kegiatan acara dan jadwal pelaksanaan yang ditugaskan kepada Anda.</p>
+    @else
+        <span class="page-eyebrow">Jadwal Lapangan</span>
+        <h1 class="page-headline mb-1 font-display">Manajemen Kegiatan Acara</h1>
+        <p class="page-subtext">Pantau seluruh agenda dan jadwal pelaksanaan acara yang telah terkonfirmasi.</p>
+    @endif
 </div>
 
 <!-- Filter Box -->
